@@ -217,8 +217,8 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
   };
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-8 px-4 md:px-0">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -228,12 +228,12 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
             className="card"
           >
             <div className="flex items-center">
-              <div className={`p-3 rounded-full ${stat.color} bg-opacity-10`}>
-                <stat.icon className={`w-6 h-6 ${stat.color.replace('bg-', 'text-')}`} />
+              <div className={`p-2 md:p-3 rounded-full ${stat.color} bg-opacity-10`}>
+                <stat.icon className={`w-4 h-4 md:w-6 md:h-6 ${stat.color.replace('bg-', 'text-')}`} />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+              <div className="ml-3 md:ml-4">
+                <p className="text-xs md:text-sm font-medium text-gray-600">{stat.label}</p>
+                <p className="text-lg md:text-2xl font-semibold text-gray-900">{stat.value}</p>
               </div>
             </div>
           </motion.div>
@@ -241,7 +241,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
       </div>
 
       <div className="card">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h3 className="text-lg font-semibold">Gestión de Productos</h3>
           {!showForm && (
             <button
@@ -258,7 +258,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                 });
                 setShowForm(true);
               }}
-              className="btn-primary inline-flex items-center"
+              className="btn-primary inline-flex items-center justify-center w-full md:w-auto"
             >
               <Plus className="w-5 h-5 mr-2" />
               Agregar Producto
@@ -403,8 +403,8 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                           htmlFor="image-upload"
                           className="cursor-pointer text-center p-4"
                         >
-                          <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                          <span className="mt-2 block text-sm text-gray-600">
+                          <Upload className="mx-auto h-6 w-6 md:h-8 md:w-8 text-gray-400" />
+                          <span className="mt-2 block text-xs md:text-sm text-gray-600">
                             {isUploading ? 'Subiendo...' : 'Agregar imágenes'}
                           </span>
                         </label>
@@ -431,7 +431,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                 <p className="text-red-500 text-sm">{error}</p>
               )}
 
-              <div className="flex justify-end gap-4">
+              <div className="flex flex-col md:flex-row justify-end gap-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -447,13 +447,13 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                       image_url: [],
                     });
                   }}
-                  className="btn-secondary"
+                  className="btn-secondary w-full md:w-auto"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary"
+                  className="btn-primary w-full md:w-auto"
                   disabled={isUploading || formData.image_url.length === 0}
                 >
                   {editingProduct ? 'Actualizar Producto' : 'Agregar Producto'}
@@ -529,26 +529,26 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md"
+            className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md mx-4"
           >
             <h3 className="text-lg font-semibold mb-4">Confirmar Eliminación</h3>
             <p className="text-gray-600 mb-6">
               ¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.
             </p>
-            <div className="flex justify-end gap-4">
+            <div className="flex flex-col md:flex-row justify-end gap-4">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="btn-secondary"
+                className="btn-secondary w-full md:w-auto"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleDelete(showDeleteConfirm)}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg w-full md:w-auto"
               >
                 Eliminar
               </button>
