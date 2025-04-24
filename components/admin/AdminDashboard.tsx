@@ -19,6 +19,11 @@ const CATEGORIES = [
   { id: 'otros', label: 'Otros' },
 ];
 
+interface ColorVariant {
+  color_name: string;
+  color_code: string;
+}
+
 export default function AdminDashboard({ products: initialProducts, orders, profiles }: DashboardProps) {
   const [products, setProducts] = useState(initialProducts);
   const [isUploading, setIsUploading] = useState(false);
@@ -31,9 +36,9 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
     description: '',
     prince: '',
     category: '',
-    stock: '',
     size: '',
     image_url: [] as string[],
+    colors: [] as ColorVariant[],
   });
   const [error, setError] = useState('');
   
@@ -132,17 +137,47 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
     }));
   };
 
-  const handleEdit = (product: any) => {
+  const handleAddColor = () => {
+    setFormData(prev => ({
+      ...prev,
+      colors: [...prev.colors, { color_name: '', color_code: '' }],
+    }));
+  };
+
+  const handleRemoveColor = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      colors: prev.colors.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleColorChange = (index: number, field: keyof ColorVariant, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      colors: prev.colors.map((color, i) => 
+        i === index ? { ...color, [field]: value } : color
+      ),
+    }));
+  };
+
+  const handleEdit = async (product: any) => {
     const imageUrls = parseImageUrls(product.image_url);
+    
+    // Fetch color variants
+    const { data: colors } = await supabase
+      .from('product_colors')
+      .select('*')
+      .eq('product_id', product.id);
+
     setEditingProduct(product);
     setFormData({
       name: product.name,
       description: product.description,
       prince: product.prince.toString(),
       category: product.category,
-      stock: product.stock,
       size: product.size || '',
       image_url: imageUrls,
+      colors: colors || [],
     });
     setShowForm(true);
   };
@@ -171,31 +206,64 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
       setError('');
       
       const productData = {
-        ...formData,
+        name: formData.name,
+        description: formData.description,
         prince: parseFloat(formData.prince),
+        category: formData.category,
+        size: formData.size,
         image_url: JSON.stringify(formData.image_url),
       };
       
       if (editingProduct) {
-        const { data, error } = await supabase
+        const { data: updatedProduct, error: productError } = await supabase
           .from('products')
           .update(productData)
           .eq('id', editingProduct.id)
-          .select();
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (productError) throw productError;
 
-        setProducts(prev => prev.map(p => p.id === editingProduct.id ? data[0] : p));
+        // Update color variants
+        await supabase
+          .from('product_colors')
+          .delete()
+          .eq('product_id', editingProduct.id);
+
+        const { error: colorsError } = await supabase
+          .from('product_colors')
+          .insert(
+            formData.colors.map(color => ({
+              product_id: editingProduct.id,
+              ...color,
+            }))
+          );
+
+        if (colorsError) throw colorsError;
+
+        setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
         toast.success('Producto actualizado exitosamente');
       } else {
-        const { data, error } = await supabase
+        const { data: newProduct, error: productError } = await supabase
           .from('products')
           .insert([productData])
-          .select();
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (productError) throw productError;
 
-        setProducts(prev => [...prev, data[0]]);
+        const { error: colorsError } = await supabase
+          .from('product_colors')
+          .insert(
+            formData.colors.map(color => ({
+              product_id: newProduct.id,
+              ...color,
+            }))
+          );
+
+        if (colorsError) throw colorsError;
+
+        setProducts(prev => [...prev, newProduct]);
         toast.success('Producto agregado exitosamente');
       }
 
@@ -204,9 +272,9 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
         description: '',
         prince: '',
         category: '',
-        stock: '',
         size: '',
         image_url: [],
+        colors: [],
       });
       setShowForm(false);
       setEditingProduct(null);
@@ -252,9 +320,9 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   description: '',
                   prince: '',
                   category: '',
-                  stock: '',
                   size: '',
                   image_url: [],
+                  colors: [],
                 });
                 setShowForm(true);
               }}
@@ -281,9 +349,9 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                     description: '',
                     prince: '',
                     category: '',
-                    stock: '',
                     size: '',
                     image_url: [],
+                    colors: [],
                   });
                 }}
                 className="text-gray-500 hover:text-gray-700"
@@ -342,20 +410,6 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Stock
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.stock}
-                    onChange={e => setFormData(prev => ({ ...prev, stock: e.target.value }))}
-                    className="input-field"
-                    min="0"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Talla
                   </label>
                   <input
@@ -367,7 +421,48 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   />
                 </div>
 
-                <div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Colores Disponibles
+                  </label>
+                  <div className="space-y-4">
+                    {formData.colors.map((color, index) => (
+                      <div key={index} className="flex items-center gap-4">
+                        <input
+                          type="text"
+                          value={color.color_name}
+                          onChange={e => handleColorChange(index, 'color_name', e.target.value)}
+                          placeholder="Nombre del color"
+                          className="input-field flex-1"
+                          required
+                        />
+                        <input
+                          type="color"
+                          value={color.color_code}
+                          onChange={e => handleColorChange(index, 'color_code', e.target.value)}
+                          className="w-12 h-12 rounded-lg cursor-pointer"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveColor(index)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={handleAddColor}
+                      className="btn-secondary"
+                    >
+                      Agregar Color
+                    </button>
+                  </div>
+                </div>
+
+                <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Imágenes del Producto (Máximo 5)
                   </label>
@@ -442,9 +537,9 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                       description: '',
                       prince: '',
                       category: '',
-                      stock: '',
                       size: '',
                       image_url: [],
+                      colors: [],
                     });
                   }}
                   className="btn-secondary w-full md:w-auto"
@@ -454,7 +549,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                 <button
                   type="submit"
                   className="btn-primary w-full md:w-auto"
-                  disabled={isUploading || formData.image_url.length === 0}
+                  disabled={isUploading || formData.image_url.length === 0 || formData.colors.length === 0}
                 >
                   {editingProduct ? 'Actualizar Producto' : 'Agregar Producto'}
                 </button>
@@ -496,9 +591,6 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   <div className="mt-2 flex items-center justify-between">
                     <span className="text-primary font-semibold">
                       ${product.prince}
-                    </span>
-                    <span className="text-sm text-gray-500">
-                      Stock: {product.stock}
                     </span>
                   </div>
                   {product.size && (
