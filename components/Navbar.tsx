@@ -104,44 +104,57 @@ export default function Navbar({ session, userRole }: NavbarProps) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white border-t"
+            className="md:hidden bg-white border-t overflow-hidden"
           >
-            <div className="container mx-auto px-4 py-4 space-y-4">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="block py-2 text-gray-600 hover:text-primary transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <div className="flex items-center space-x-4 pt-4 border-t">
-                {session ? (
-                  <>
-                    {userRole !== 'admin' && (
-                      <Link
-                        href="/carrito"
-                        className="flex items-center space-x-2 text-gray-600 hover:text-primary transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <ShoppingBag className="w-5 h-5" />
-                        <span>Carrito</span>
-                      </Link>
-                    )}
-                    <UserMenu role={userRole} onClose={() => setIsMenuOpen(false)} />
-                  </>
-                ) : (
+            <div className="container mx-auto px-4 py-4">
+              <div className="flex flex-col space-y-4">
+                {menuItems.map((item) => (
                   <Link
-                    href="/auth"
-                    className="flex items-center space-x-2 btn-primary"
+                    key={item.href}
+                    href={item.href}
+                    className="text-gray-600 hover:text-primary transition-colors py-2"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <LogIn className="w-5 h-5" />
-                    <span>Iniciar Sesión</span>
+                    {item.label}
                   </Link>
-                )}
+                ))}
+
+                <div className="pt-4 border-t border-gray-100">
+                  {session ? (
+                    <div className="flex flex-col space-y-4">
+                      {userRole !== 'admin' && (
+                        <Link
+                          href="/carrito"
+                          className="flex items-center space-x-2 text-gray-600"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <ShoppingBag className="w-5 h-5" />
+                          <span>Carrito</span>
+                          <span className="ml-auto bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            0
+                          </span>
+                        </Link>
+                      )}
+                      <Link
+                        href={userRole === 'admin' ? '/admin' : '/perfil'}
+                        className="text-gray-600 hover:text-primary transition-colors py-2"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {userRole === 'admin' ? 'Dashboard' : 'Mi Perfil'}
+                      </Link>
+                      <UserMenu role={userRole} isMobile onClose={() => setIsMenuOpen(false)} />
+                    </div>
+                  ) : (
+                    <Link
+                      href="/auth"
+                      className="flex items-center justify-center space-x-2 btn-primary w-full"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <LogIn className="w-5 h-5" />
+                      <span>Iniciar Sesión</span>
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>

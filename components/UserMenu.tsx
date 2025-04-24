@@ -9,10 +9,11 @@ import { toast } from 'sonner';
 
 interface UserMenuProps {
   role: string | null;
+  isMobile?: boolean;
   onClose?: () => void;
 }
 
-export default function UserMenu({ role, onClose }: UserMenuProps) {
+export default function UserMenu({ role, isMobile, onClose }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const supabase = createClientComponentClient();
@@ -33,12 +34,22 @@ export default function UserMenu({ role, onClose }: UserMenuProps) {
     }
   };
 
-  const toggleMenu = () => setIsOpen(!isOpen);
+  if (isMobile) {
+    return (
+      <button
+        onClick={handleSignOut}
+        className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors py-2"
+      >
+        <LogOut className="w-5 h-5" />
+        <span>Cerrar Sesión</span>
+      </button>
+    );
+  }
 
   return (
     <div className="relative">
       <button
-        onClick={toggleMenu}
+        onClick={() => setIsOpen(!isOpen)}
         className="p-2 hover:bg-gray-100 rounded-full transition-colors relative group"
       >
         <User className="w-6 h-6" />
@@ -50,19 +61,17 @@ export default function UserMenu({ role, onClose }: UserMenuProps) {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
           {role === 'admin' ? (
-            <>
-              <Link
-                href="/admin"
-                className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
-                onClick={() => {
-                  setIsOpen(false);
-                  if (onClose) onClose();
-                }}
-              >
-                <Settings className="w-5 h-5 mr-2" />
-                Dashboard
-              </Link>
-            </>
+            <Link
+              href="/admin"
+              className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
+              onClick={() => {
+                setIsOpen(false);
+                if (onClose) onClose();
+              }}
+            >
+              <Settings className="w-5 h-5 mr-2" />
+              Dashboard
+            </Link>
           ) : (
             <>
               <Link
