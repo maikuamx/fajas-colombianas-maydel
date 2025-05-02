@@ -85,48 +85,64 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
     return imageUrl;
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
+  const handleImageUpload = async () => {
     try {
       setIsUploading(true);
       setError('');
 
-      const uploadPromises = files.map(async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
-
-        const response = await fetch(
-          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-          {
-            method: 'POST',
-            body: formData,
+      const widget = window.cloudinary.createUploadWidget(
+        {
+          cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+          uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET,
+          maxFiles: 5,
+          sources: ['local', 'url', 'camera'],
+          showAdvancedOptions: false,
+          cropping: false,
+          multiple: true,
+          defaultSource: 'local',
+          styles: {
+            palette: {
+              window: '#FFFFFF',
+              windowBorder: '#90A0B3',
+              tabIcon: '#0078FF',
+              menuIcons: '#5A616A',
+              textDark: '#000000',
+              textLight: '#FFFFFF',
+              link: '#0078FF',
+              action: '#FF620C',
+              inactiveTabIcon: '#0E2F5A',
+              error: '#F44235',
+              inProgress: '#0078FF',
+              complete: '#20B832',
+              sourceBg: '#E4EBF1'
+            },
+            fonts: {
+              default: null,
+              "'Montserrat', sans-serif": {
+                url: 'https://fonts.googleapis.com/css?family=Montserrat',
+                active: true
+              }
+            }
           }
-        );
+        },
+        (error: any, result: any) => {
+          if (!error && result && result.event === 'success') {
+            setFormData(prev => ({
+              ...prev,
+              image_url: [...prev.image_url, result.info.secure_url],
+            }));
+          }
+          if (result.event === 'close') {
+            setIsUploading(false);
+          }
+        }
+      );
 
-        const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
-        return data.secure_url;
-      });
-
-      const uploadedUrls = await Promise.all(uploadPromises);
-      
-      setFormData(prev => ({
-        ...prev,
-        image_url: [...prev.image_url, ...uploadedUrls],
-      }));
-      
-      toast.success('Imágenes subidas exitosamente');
-    } catch (error: any) {
+      widget.open();
+    } catch (error) {
       toast.error('Error al subir las imágenes');
       setError('Error al subir las imágenes. Por favor, intenta de nuevo.');
-    } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -286,14 +302,15 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
 
   return (
     <div className="space-y-8 px-4 md:px-0">
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      {/* Stats Grid - Responsive layout */}
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="card"
+            className="card p-4 md:p-6"
           >
             <div className="flex items-center">
               <div className={`p-2 md:p-3 rounded-full ${stat.color} bg-opacity-10`}>
@@ -301,7 +318,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
               </div>
               <div className="ml-3 md:ml-4">
                 <p className="text-xs md:text-sm font-medium text-gray-600">{stat.label}</p>
-                <p className="text-lg md:text-2xl font-semibold text-gray-900">{stat.value}</p>
+                <p className="text-base md:text-2xl font-semibold text-gray-900">{stat.value}</p>
               </div>
             </div>
           </motion.div>
@@ -326,7 +343,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                 });
                 setShowForm(true);
               }}
-              className="btn-primary inline-flex items-center justify-center w-full md:w-auto"
+              className="btn-primary inline-flex items-center justify-center"
             >
               <Plus className="w-5 h-5 mr-2" />
               Agregar Producto
@@ -427,7 +444,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   </label>
                   <div className="space-y-4">
                     {formData.colors.map((color, index) => (
-                      <div key={index} className="flex items-center gap-4">
+                      <div key={index} className="flex flex-col md:flex-row items-start md:items-center gap-4">
                         <input
                           type="text"
                           value={color.color_name}
@@ -436,26 +453,28 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                           className="input-field flex-1"
                           required
                         />
-                        <input
-                          type="color"
-                          value={color.color_code}
-                          onChange={e => handleColorChange(index, 'color_code', e.target.value)}
-                          className="w-12 h-12 rounded-lg cursor-pointer"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveColor(index)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-full"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                          <input
+                            type="color"
+                            value={color.color_code}
+                            onChange={e => handleColorChange(index, 'color_code', e.target.value)}
+                            className="w-12 h-12 rounded-lg cursor-pointer"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveColor(index)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                     <button
                       type="button"
                       onClick={handleAddColor}
-                      className="btn-secondary"
+                      className="btn-secondary w-full md:w-auto"
                     >
                       Agregar Color
                     </button>
@@ -485,24 +504,16 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                     ))}
                     {formData.image_url.length < 5 && (
                       <div className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={handleImageUpload}
-                          className="hidden"
-                          id="image-upload"
-                        />
-                        <label
-                          htmlFor="image-upload"
-                          className="cursor-pointer text-center p-4"
+                        <button
+                          type="button"
+                          onClick={handleImageUpload}
+                          className="text-center p-4 w-full h-full"
                         >
                           <Upload className="mx-auto h-6 w-6 md:h-8 md:w-8 text-gray-400" />
                           <span className="mt-2 block text-xs md:text-sm text-gray-600">
                             {isUploading ? 'Subiendo...' : 'Agregar imágenes'}
                           </span>
-                        </label>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -558,7 +569,8 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Products Grid - Responsive layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {products.map((product) => {
             const imageUrls = parseImageUrls(product.image_url);
             const firstImage = imageUrls[0] || '';
@@ -597,6 +609,22 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                     <p className="text-sm text-gray-500 mt-1">
                       Talla: {product.size}
                     </p>
+                  )}
+                  {/* Color variants */}
+                  {product.product_colors && product.product_colors.length > 0 && (
+                    <div className="flex gap-1 mt-2">
+                      {product.product_colors.map(color => (
+                        <div
+                          key={color.id}
+                          className="group/color relative w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                          style={{ backgroundColor: color.color_code }}
+                        >
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover/color:opacity-100 transition-opacity whitespace-nowrap">
+                            {color.color_name}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                   <div className="mt-4 flex justify-end gap-2">
                     <button
