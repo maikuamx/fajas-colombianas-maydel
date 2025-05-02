@@ -179,7 +179,6 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
   const handleEdit = async (product: any) => {
     const imageUrls = parseImageUrls(product.image_url);
     
-    // Fetch color variants
     const { data: colors } = await supabase
       .from('product_colors')
       .select('*')
@@ -240,7 +239,6 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
 
         if (productError) throw productError;
 
-        // Update color variants
         await supabase
           .from('product_colors')
           .delete()
@@ -379,7 +377,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
+                <div className="col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Nombre del Producto
                   </label>
@@ -392,7 +390,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   />
                 </div>
 
-                <div>
+                <div className="col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Precio
                   </label>
@@ -406,7 +404,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   />
                 </div>
 
-                <div>
+                <div className="col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Categoría
                   </label>
@@ -425,7 +423,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   </select>
                 </div>
 
-                <div>
+                <div className="col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Talla
                   </label>
