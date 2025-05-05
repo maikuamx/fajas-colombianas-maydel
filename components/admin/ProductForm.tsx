@@ -89,13 +89,13 @@ export default function ProductForm({ initialProducts }: ProductFormProps) {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-xl font-semibold mb-6">Agregar Nuevo Producto</h2>
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl shadow-sm p-3 sm:p-4 md:p-6">
+        <h2 className="text-xl font-semibold mb-4 sm:mb-6">Agregar Nuevo Producto</h2>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Nombre del Producto
               </label>
@@ -103,12 +103,12 @@ export default function ProductForm({ initialProducts }: ProductFormProps) {
                 type="text"
                 value={formData.name}
                 onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="input-field"
+                className="input-field text-base sm:text-sm"
                 required
               />
             </div>
 
-            <div>
+            <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Precio
               </label>
@@ -116,13 +116,13 @@ export default function ProductForm({ initialProducts }: ProductFormProps) {
                 type="number"
                 value={formData.prince}
                 onChange={e => setFormData(prev => ({ ...prev, prince: e.target.value }))}
-                className="input-field"
+                className="input-field text-base sm:text-sm"
                 step="0.01"
                 required
               />
             </div>
 
-            <div>
+            <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Categoría
               </label>
@@ -130,12 +130,12 @@ export default function ProductForm({ initialProducts }: ProductFormProps) {
                 type="text"
                 value={formData.category}
                 onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                className="input-field"
+                className="input-field text-base sm:text-sm"
                 required
               />
             </div>
 
-            <div>
+            <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Stock
               </label>
@@ -143,12 +143,12 @@ export default function ProductForm({ initialProducts }: ProductFormProps) {
                 type="text"
                 value={formData.stock}
                 onChange={e => setFormData(prev => ({ ...prev, stock: e.target.value }))}
-                className="input-field"
+                className="input-field text-base sm:text-sm"
                 required
               />
             </div>
 
-            <div>
+            <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Talla
               </label>
@@ -156,11 +156,11 @@ export default function ProductForm({ initialProducts }: ProductFormProps) {
                 type="text"
                 value={formData.size}
                 onChange={e => setFormData(prev => ({ ...prev, size: e.target.value }))}
-                className="input-field"
+                className="input-field text-base sm:text-sm"
               />
             </div>
 
-            <div>
+            <div className="col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Imagen
               </label>
@@ -169,7 +169,7 @@ export default function ProductForm({ initialProducts }: ProductFormProps) {
                   type="button"
                   onClick={handleImageUpload}
                   disabled={isUploading}
-                  className={`input-field flex items-center justify-center cursor-pointer ${
+                  className={`input-field flex items-center justify-center cursor-pointer min-h-[2.75rem] ${
                     isUploading ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
@@ -194,7 +194,9 @@ export default function ProductForm({ initialProducts }: ProductFormProps) {
                   ) : (
                     <div className="flex items-center justify-center">
                       <Upload className="w-5 h-5 mr-2" />
-                      <span>{isUploading ? 'Subiendo...' : 'Subir Imagen'}</span>
+                      <span className="text-base sm:text-sm">
+                        {isUploading ? 'Subiendo...' : 'Subir Imagen'}
+                      </span>
                     </div>
                   )}
                 </button>
@@ -209,7 +211,7 @@ export default function ProductForm({ initialProducts }: ProductFormProps) {
             <textarea
               value={formData.description}
               onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="input-field"
+              className="input-field text-base sm:text-sm"
               rows={3}
               required
             />
@@ -222,7 +224,7 @@ export default function ProductForm({ initialProducts }: ProductFormProps) {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="btn-primary"
+              className="btn-primary w-full sm:w-auto text-base sm:text-sm"
               disabled={isUploading || !formData.image_url}
             >
               <Plus className="w-5 h-5 mr-2" />

@@ -376,7 +376,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 max-[525px]:space-y-4">
                 <div className="col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Nombre del Producto
@@ -436,22 +436,22 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   />
                 </div>
 
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Colores Disponibles
                   </label>
                   <div className="space-y-4">
                     {formData.colors.map((color, index) => (
-                      <div key={index} className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                      <div key={index} className="flex flex-col gap-4">
                         <input
                           type="text"
                           value={color.color_name}
                           onChange={e => handleColorChange(index, 'color_name', e.target.value)}
                           placeholder="Nombre del color"
-                          className="input-field flex-1"
+                          className="input-field"
                           required
                         />
-                        <div className="flex items-center gap-2 w-full md:w-auto">
+                        <div className="flex items-center gap-2">
                           <input
                             type="color"
                             value={color.color_code}
@@ -472,18 +472,18 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                     <button
                       type="button"
                       onClick={handleAddColor}
-                      className="btn-secondary w-full md:w-auto"
+                      className="btn-secondary w-full"
                     >
                       Agregar Color
                     </button>
                   </div>
                 </div>
 
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Imágenes del Producto (Máximo 5)
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {formData.image_url.map((url, index) => (
                       <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
                         <img
@@ -535,7 +535,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                 <p className="text-red-500 text-sm">{error}</p>
               )}
 
-              <div className="flex flex-col md:flex-row justify-end gap-4">
+              <div className="flex flex-col gap-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -551,13 +551,13 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                       colors: [],
                     });
                   }}
-                  className="btn-secondary w-full md:w-auto"
+                  className="btn-secondary w-full"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary w-full md:w-auto"
+                  className="btn-primary w-full"
                   disabled={isUploading || formData.image_url.length === 0 || formData.colors.length === 0}
                 >
                   {editingProduct ? 'Actualizar Producto' : 'Agregar Producto'}
@@ -657,16 +657,16 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
             <p className="text-gray-600 mb-6">
               ¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.
             </p>
-            <div className="flex flex-col md:flex-row justify-end gap-4">
+            <div className="flex flex-col gap-4">
               <button
                 onClick={() => setShowDeleteConfirm(null)}
-                className="btn-secondary w-full md:w-auto"
+                className="btn-secondary w-full"
               >
                 Cancelar
               </button>
               <button
                 onClick={() => handleDelete(showDeleteConfirm)}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg w-full md:w-auto"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg w-full"
               >
                 Eliminar
               </button>
