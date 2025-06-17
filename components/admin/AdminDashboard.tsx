@@ -489,7 +489,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                         <img
                           src={url}
                           alt={`Imagen ${index + 1}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
                         <button
                           type="button"
@@ -582,7 +582,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   <img
                     src={firstImage}
                     alt={product.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                   {imageUrls.length > 1 && (
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
