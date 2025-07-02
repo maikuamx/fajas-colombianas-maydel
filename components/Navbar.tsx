@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ShoppingBag, LogIn } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
+import { useCart } from '../lib/cart-context';
 import UserMenu from './UserMenu';
 
 interface NavbarProps {
@@ -15,6 +16,7 @@ interface NavbarProps {
 
 export default function Navbar({ session, userRole }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { itemCount } = useCart();
 
   const menuItems = [
     { href: '/', label: 'Inicio' },
@@ -62,9 +64,11 @@ export default function Navbar({ session, userRole }: NavbarProps) {
                     className="p-2 hover:bg-gray-100 rounded-full transition-colors relative group"
                   >
                     <ShoppingBag className="w-6 h-6" />
-                    <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      0
-                    </span>
+                    {itemCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {itemCount}
+                      </span>
+                    )}
                     <span className="absolute top-full left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       Carrito
                     </span>
@@ -130,9 +134,11 @@ export default function Navbar({ session, userRole }: NavbarProps) {
                         >
                           <ShoppingBag className="w-5 h-5" />
                           <span>Carrito</span>
-                          <span className="ml-auto bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                            0
-                          </span>
+                          {itemCount > 0 && (
+                            <span className="ml-auto bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                              {itemCount}
+                            </span>
+                          )}
                         </Link>
                       )}
                       <Link

@@ -6,6 +6,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { CartProvider } from '../lib/cart-context';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,28 +17,8 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: 'Fajas Colombianas Maydel',
-    template: 'Fajas Colombianas Maydel - %s'
-  },
+  title: 'Maydel Fajas Colombianas',
   description: 'Fajas colombianas de alta calidad para realzar tu figura',
-  icons: {
-    icon: [
-      {
-        url: '/favicon/favicon-16x16.png',
-        sizes: '16x16',
-        type: 'image/png'
-      },
-      {
-        url: '/favicon/favicon-32x32.png',
-        sizes: '32x32',
-        type: 'image/png'
-      }
-    ],
-    apple: '/favicon/apple-touch-icon.png',
-    shortcut: '/favicon/favicon.ico',
-  },
-  manifest: '/favicon/site.webmanifest',
 };
 
 export default async function RootLayout({
@@ -65,12 +46,14 @@ export default async function RootLayout({
         <script src="https://upload-widget.cloudinary.com/global/all.js" async />
       </head>
       <body className="min-h-screen bg-white flex flex-col">
-        <Navbar session={session} userRole={userRole} />
-        <main className="flex-grow pt-20">
-          {children}
-        </main>
-        <Footer />
-        <Toaster position="top-right" />
+        <CartProvider initialSession={session}>
+          <Navbar session={session} userRole={userRole} />
+          <main className="flex-grow pt-20">
+            {children}
+          </main>
+          <Footer />
+          <Toaster position="top-right" />
+        </CartProvider>
       </body>
     </html>
   );

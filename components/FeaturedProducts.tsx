@@ -3,6 +3,8 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import CartButton from './CartButton';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useEffect, useState } from 'react';
 
 interface Product {
   id: string;
@@ -23,7 +25,25 @@ interface FeaturedProductsProps {
   isAuthenticated: boolean;
 }
 
-export default function FeaturedProducts({ products, userRole, isAuthenticated }: FeaturedProductsProps) {
+export default function FeaturedProducts({ products, userRole, isAuthenticated: initialAuth }: FeaturedProductsProps) {
+  const [isAuthenticated, setIsAuthenticated] = useState(initialAuth);
+  const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
   const parseImageUrls = (imageUrl: string | string[]): string[] => {
     if (!imageUrl) return [];
     
@@ -80,7 +100,7 @@ export default function FeaturedProducts({ products, userRole, isAuthenticated }
                   <img
                     src={firstImage}
                     alt={product.name}
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <Link
@@ -101,6 +121,7 @@ export default function FeaturedProducts({ products, userRole, isAuthenticated }
                     </span>
                     <CartButton
                       productId={product.id}
+                      productColors={product.product_colors}
                       userRole={userRole}
                       isAuthenticated={isAuthenticated}
                     />

@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Heart, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
+import { Heart, ChevronLeft, ChevronRight, Minus, Plus } from 'lucide-react';
 import Link from 'next/link';
+import CartButton from '../CartButton';
 
 interface Product {
   id: string;
@@ -73,7 +74,7 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
               key={currentImageIndex}
               src={imageUrls[currentImageIndex]}
               alt={product.name}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
@@ -110,7 +111,7 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
                   <img
                     src={url}
                     alt={`${product.name} - Vista ${index + 1}`}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 </button>
               ))}
@@ -196,10 +197,15 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
           </div>
 
           <div className="flex gap-4 pt-4">
-            <button className="flex-1 btn-primary flex items-center justify-center gap-2">
-              <ShoppingCart className="w-5 h-5" />
-              Agregar al Carrito
-            </button>
+            <div className="flex-1">
+              <CartButton
+                productId={product.id}
+                productColors={product.product_colors}
+                userRole={null}
+                isAuthenticated={true}
+                className="w-full h-12 rounded-xl bg-primary text-white hover:bg-primary/90 flex items-center justify-center gap-2 font-medium"
+              />
+            </div>
             <button className="p-3 rounded-full border border-gray-200 hover:bg-gray-100 transition-colors">
               <Heart className="w-6 h-6" />
             </button>

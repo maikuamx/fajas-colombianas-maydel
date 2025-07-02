@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useMemo, Fragment } from 'react';
+import { useState, useMemo, Fragment, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, ChevronDown, ChevronLeft, ChevronRight, ShoppingCart, Search, X, Check } from 'lucide-react';
+import { Filter, ChevronDown, ChevronLeft, ChevronRight, Search, X, Check } from 'lucide-react';
 import Link from 'next/link';
 import { Combobox, Transition } from '@headlessui/react';
+import CartButton from '../CartButton';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface Product {
   id: string;
@@ -44,6 +46,47 @@ export default function ProductCatalog({ products }: ProductCatalogProps) {
   const [categoryQuery, setCategoryQuery] = useState('');
   const [sizeQuery, setSizeQuery] = useState('');
   const [colorQuery, setColorQuery] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  
+  const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+      
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        setUserRole(profile?.role || null);
+      }
+    };
+    
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setIsAuthenticated(!!session);
+      
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        setUserRole(profile?.role || null);
+      } else {
+        setUserRole(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
 
   const parseImageUrls = (imageUrl: string | string[]): string[] => {
     if (!imageUrl) return [];
@@ -386,9 +429,9 @@ export default function ProductCatalog({ products }: ProductCatalogProps) {
                 >
                   <div className="relative aspect-square rounded-2xl overflow-hidden mb-4">
                     <img
-                      src={firstImage || "/placeholder.svg"}
+                      src={firstImage}
                       alt={product.name}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                       <Link
@@ -407,9 +450,12 @@ export default function ProductCatalog({ products }: ProductCatalogProps) {
                       <span className="text-xl font-bold text-primary">
                         ${product.prince}
                       </span>
-                      <button className="p-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors">
-                        <ShoppingCart className="w-5 h-5" />
-                      </button>
+                      <CartButton
+                        productId={product.id}
+                        productColors={product.product_colors}
+                        userRole={userRole}
+                        isAuthenticated={isAuthenticated}
+                      />
                     </div>
                     {product.product_colors.length > 0 && (
                       <div className="flex gap-1 pt-2">
