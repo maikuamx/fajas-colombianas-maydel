@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ShoppingBag, LogIn } from 'lucide-react';
+import { Menu, X, ShoppingBag, LogIn, Package } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import { useCart } from '../lib/cart-context';
 import UserMenu from './UserMenu';
@@ -59,20 +59,31 @@ export default function Navbar({ session, userRole }: NavbarProps) {
             {session ? (
               <>
                 {userRole !== 'admin' && (
-                  <Link
-                    href="/carrito"
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors relative group"
-                  >
-                    <ShoppingBag className="w-6 h-6" />
-                    {itemCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {itemCount}
+                  <>
+                    <Link
+                      href="/pedidos"
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors relative group"
+                    >
+                      <Package className="w-6 h-6" />
+                      <span className="absolute top-full left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        Mis Pedidos
                       </span>
-                    )}
-                    <span className="absolute top-full left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Carrito
-                    </span>
-                  </Link>
+                    </Link>
+                    <Link
+                      href="/carrito"
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors relative group"
+                    >
+                      <ShoppingBag className="w-6 h-6" />
+                      {itemCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                          {itemCount}
+                        </span>
+                      )}
+                      <span className="absolute top-full left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        Carrito
+                      </span>
+                    </Link>
+                  </>
                 )}
                 <UserMenu role={userRole} />
               </>
@@ -127,19 +138,29 @@ export default function Navbar({ session, userRole }: NavbarProps) {
                   {session ? (
                     <div className="flex flex-col space-y-4">
                       {userRole !== 'admin' && (
-                        <Link
-                          href="/carrito"
-                          className="flex items-center space-x-2 text-gray-600"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <ShoppingBag className="w-5 h-5" />
-                          <span>Carrito</span>
-                          {itemCount > 0 && (
-                            <span className="ml-auto bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                              {itemCount}
-                            </span>
-                          )}
-                        </Link>
+                        <>
+                          <Link
+                            href="/pedidos"
+                            className="flex items-center space-x-2 text-gray-600"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <Package className="w-5 h-5" />
+                            <span>Mis Pedidos</span>
+                          </Link>
+                          <Link
+                            href="/carrito"
+                            className="flex items-center space-x-2 text-gray-600"
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <ShoppingBag className="w-5 h-5" />
+                            <span>Carrito</span>
+                            {itemCount > 0 && (
+                              <span className="ml-auto bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                {itemCount}
+                              </span>
+                            )}
+                          </Link>
+                        </>
                       )}
                       <Link
                         href={userRole === 'admin' ? '/admin' : '/perfil'}

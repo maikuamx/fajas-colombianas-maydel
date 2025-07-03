@@ -35,6 +35,8 @@ export default async function PaymentSuccessPage({
     if (checkoutSession.payment_status === 'paid') {
       // Create order in database
       const items = JSON.parse(checkoutSession.metadata?.items || '[]');
+      const shippingAddressId = checkoutSession.metadata?.shipping_address_id;
+      const shippingCost = parseFloat(checkoutSession.metadata?.shipping_cost || '0');
       
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -42,6 +44,8 @@ export default async function PaymentSuccessPage({
           user_id: session.user.id,
           status: 'completed',
           total_amount: checkoutSession.amount_total! / 100, // Convert from cents
+          shipping_address_id: shippingAddressId || null,
+          shipping_cost: shippingCost,
         }])
         .select()
         .single();

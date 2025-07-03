@@ -16,28 +16,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const { items, total } = await request.json();
+    const { items, total, shipping_address_id, shipping_cost } = await request.json();
 
     // Create Stripe checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: items.map((item: any) => ({
-        price_data: {
-          currency: 'mxn',
-          product_data: {
-            name: item.name,
-            description: item.color_name ? `Color: ${item.color_name}` : undefined,
+      line_items: [
+        // Product items
+        ...items.map((item: any) => ({
+          price_data: {
+            currency: 'mxn',
+            product_data: {
+              name: item.name,
+              description: item.color_name ? `Color: ${item.color_name}` : undefined,
+            },
+            unit_amount: Math.round(item.price * 100), // Convert to cents
           },
-          unit_amount: Math.round(item.price * 100), // Convert to cents
-        },
-        quantity: item.quantity,
-      })),
+          quantity: item.quantity,
+        })),
+        // Shipping cost as a separate line item
+        ...(shipping_cost > 0 ? [{
+          price_data: {
+            currency: 'mxn',
+            product_data: {
+              name: 'Envío',
+              description: 'Costo de envío',
+            },
+            unit_amount: Math.round(shipping_cost * 100),
+          },
+          quantity: 1,
+        }] : [])
+      ],
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_API_URL}/pago-exitoso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_API_URL}/carrito`,
       metadata: {
         user_id: session.user.id,
         items: JSON.stringify(items),
+        shipping_address_id: shipping_address_id || '',
+        shipping_cost: shipping_cost.toString(),
       },
     });
 

@@ -1,21 +1,38 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Minus, Plus, Trash2, ArrowRight, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { useCart } from '../../lib/cart-context';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { toast } from 'sonner';
+import ShippingAddressForm from '../shipping/ShippingAdressForm';
 
 interface CartPageProps {
   isAuthenticated: boolean;
 }
 
+interface ShippingAddress {
+  id: string;
+  name: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+  phone?: string;
+  is_default: boolean;
+  shipping_cost: number;
+}
+
 export default function CartPage({ isAuthenticated }: CartPageProps) {
   const { items, total, itemCount, updateQuantity, removeFromCart, clearCart, isLoading } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<ShippingAddress | null>(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
   const supabase = createClientComponentClient();
   const router = useRouter();
 
@@ -33,9 +50,19 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
     return imageUrl;
   };
 
+  const subtotal = total;
+  const shippingCost = selectedAddress?.shipping_cost || 0;
+  const finalTotal = subtotal + shippingCost;
+
   const handleCheckout = async () => {
     if (!isAuthenticated) {
       router.push('/auth');
+      return;
+    }
+
+    if (!selectedAddress) {
+      toast.error('Por favor selecciona una dirección de envío');
+      setShowAddressForm(true);
       return;
     }
 
@@ -56,7 +83,9 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
             name: item.product.name,
             color_name: item.color?.color_name,
           })),
-          total: total,
+          total: finalTotal,
+          shipping_address_id: selectedAddress.id,
+          shipping_cost: shippingCost,
         }),
       });
 
@@ -124,89 +153,107 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart Items */}
-        <div className="lg:col-span-2 space-y-4">
-          {items.map((item, index) => {
-            const imageUrls = parseImageUrls(item.product.image_url);
-            const firstImage = imageUrls[0] || '';
+        <div className="lg:col-span-2 space-y-6">
+          {/* Products */}
+          <div className="space-y-4">
+            {items.map((item, index) => {
+              const imageUrls = parseImageUrls(item.product.image_url);
+              const firstImage = imageUrls[0] || '';
 
-            return (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-xl shadow-sm border p-6"
-              >
-                <div className="flex flex-col sm:flex-row gap-4">
-                  {/* Product Image */}
-                  <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
-                    <img
-                      src={firstImage}
-                      alt={item.product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+              return (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white rounded-xl shadow-sm border p-6"
+                >
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    {/* Product Image */}
+                    <div className="w-full sm:w-24 h-48 sm:h-24 rounded-lg overflow-hidden flex-shrink-0">
+                      <img
+                        src={firstImage}
+                        alt={item.product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
 
-                  {/* Product Details */}
-                  <div className="flex-1 space-y-2">
-                    <h3 className="font-semibold text-lg">{item.product.name}</h3>
-                    
-                    {item.color && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Color:</span>
-                        <div className="flex items-center gap-1">
-                          <div
-                            className="w-4 h-4 rounded-full border border-gray-200"
-                            style={{ backgroundColor: item.color.color_code }}
-                          />
-                          <span className="text-sm">{item.color.color_name}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-xl font-bold text-primary">
-                        ${item.price_at_add}
-                      </span>
+                    {/* Product Details */}
+                    <div className="flex-1 space-y-2">
+                      <h3 className="font-semibold text-lg">{item.product.name}</h3>
                       
-                      {/* Quantity Controls */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center border rounded-lg">
+                      {item.color && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Color:</span>
+                          <div className="flex items-center gap-1">
+                            <div
+                              className="w-4 h-4 rounded-full border border-gray-200"
+                              style={{ backgroundColor: item.color.color_code }}
+                            />
+                            <span className="text-sm">{item.color.color_name}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl font-bold text-primary">
+                          ${item.price_at_add}
+                        </span>
+                        
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center border rounded-lg">
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              className="p-2 hover:bg-gray-100 rounded-l-lg"
+                              disabled={item.quantity === 1}
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <span className="w-12 text-center">{item.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="p-2 hover:bg-gray-100 rounded-r-lg"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+
                           <button
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="p-2 hover:bg-gray-100 rounded-l-lg"
-                            disabled={item.quantity === 1}
+                            onClick={() => removeFromCart(item.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                           >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <span className="w-12 text-center">{item.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="p-2 hover:bg-gray-100 rounded-r-lg"
-                          >
-                            <Plus className="w-4 h-4" />
+                            <Trash2 className="w-5 h-5" />
                           </button>
                         </div>
+                      </div>
 
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                      <div className="text-right">
+                        <span className="text-sm text-gray-600">
+                          Subtotal: ${(item.price_at_add * item.quantity).toFixed(2)}
+                        </span>
                       </div>
                     </div>
-
-                    <div className="text-right">
-                      <span className="text-sm text-gray-600">
-                        Subtotal: ${(item.price_at_add * item.quantity).toFixed(2)}
-                      </span>
-                    </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Shipping Address */}
+          {isAuthenticated && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-xl shadow-sm border p-6"
+            >
+              <ShippingAddressForm
+                onAddressSelect={setSelectedAddress}
+                selectedAddressId={selectedAddress?.id}
+              />
+            </motion.div>
+          )}
         </div>
 
         {/* Order Summary */}
@@ -222,16 +269,20 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
             <div className="space-y-4 mb-6">
               <div className="flex justify-between">
                 <span>Subtotal ({itemCount} productos)</span>
-                <span>${total.toFixed(2)}</span>
+                <span>${subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Envío</span>
-                <span className="text-green-600">Gratis</span>
-              </div>
+              
+              {selectedAddress && (
+                <div className="flex justify-between">
+                  <span>Envío a {selectedAddress.city}</span>
+                  <span>${shippingCost.toFixed(2)}</span>
+                </div>
+              )}
+              
               <div className="border-t pt-4">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
-                  <span className="text-primary">${total.toFixed(2)}</span>
+                  <span className="text-primary">${finalTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -239,7 +290,7 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
             {isAuthenticated ? (
               <button 
                 onClick={handleCheckout}
-                disabled={isProcessing}
+                disabled={isProcessing || !selectedAddress}
                 className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <CreditCard className="w-5 h-5" />
@@ -254,6 +305,12 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
                   Inicia sesión para proceder con tu compra
                 </p>
               </div>
+            )}
+
+            {!selectedAddress && isAuthenticated && (
+              <p className="text-xs text-red-600 text-center mt-2">
+                Selecciona una dirección de envío para continuar
+              </p>
             )}
 
             <Link

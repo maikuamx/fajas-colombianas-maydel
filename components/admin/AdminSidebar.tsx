@@ -3,12 +3,12 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Store, Package, ShoppingCart } from 'lucide-react';
+import { Store, Package, ShoppingCart, Truck } from 'lucide-react';
 
 const menuItems = [
   { href: '/admin', icon: Store, label: 'Dashboard' },
   { href: '/admin/productos', icon: Package, label: 'Productos' },
-  { href: '/admin/ordenes', icon: ShoppingCart, label: 'Órdenes' },
+  { href: '/admin/pedidos', icon: ShoppingCart, label: 'Pedidos' },
 ];
 
 export default function AdminSidebar() {
