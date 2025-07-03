@@ -30,6 +30,7 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
   const [showForm, setShowForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<ShippingAddress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     address_line1: '',
@@ -50,14 +51,32 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
 
   const loadAddresses = async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.error('No session found');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('shipping_addresses')
         .select('*')
+        .eq('user_id', session.user.id)
         .order('is_default', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading addresses:', error);
+        throw error;
+      }
+      
       setAddresses(data || []);
+      
+      // Auto-select default address if none selected
+      if (!selectedAddressId && data && data.length > 0) {
+        const defaultAddress = data.find(addr => addr.is_default) || data[0];
+        onAddressSelect(defaultAddress);
+      }
     } catch (error) {
       console.error('Error loading addresses:', error);
       toast.error('Error al cargar las direcciones');
@@ -72,22 +91,36 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No hay sesión activa');
+      }
+
       const addressData = {
         ...formData,
+        user_id: session.user.id,
         shipping_cost: calculateShippingCost(formData.city),
       };
+
+      console.log('Saving address data:', addressData);
 
       if (editingAddress) {
         const { data, error } = await supabase
           .from('shipping_addresses')
           .update(addressData)
           .eq('id', editingAddress.id)
+          .eq('user_id', session.user.id)
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating address:', error);
+          throw error;
+        }
         
         setAddresses(prev => prev.map(addr => 
           addr.id === editingAddress.id ? data : addr
@@ -100,10 +133,16 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error saving address:', error);
+          throw error;
+        }
         
         setAddresses(prev => [data, ...prev]);
         toast.success('Dirección agregada exitosamente');
+        
+        // Auto-select the new address
+        onAddressSelect(data);
       }
 
       setFormData({
@@ -122,6 +161,8 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
     } catch (error) {
       console.error('Error saving address:', error);
       toast.error('Error al guardar la dirección');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -143,14 +184,30 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
 
   const handleDelete = async (id: string) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error('No hay sesión activa');
+      }
+
       const { error } = await supabase
         .from('shipping_addresses')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', session.user.id);
 
       if (error) throw error;
       
       setAddresses(prev => prev.filter(addr => addr.id !== id));
+      
+      // If deleted address was selected, clear selection
+      if (selectedAddressId === id) {
+        const remainingAddresses = addresses.filter(addr => addr.id !== id);
+        if (remainingAddresses.length > 0) {
+          onAddressSelect(remainingAddresses[0]);
+        }
+      }
+      
       toast.success('Dirección eliminada exitosamente');
     } catch (error) {
       console.error('Error deleting address:', error);
@@ -285,7 +342,7 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nombre completo
+                  Nombre completo *
                 </label>
                 <input
                   type="text"
@@ -311,7 +368,7 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Dirección
+                Dirección *
               </label>
               <input
                 type="text"
@@ -339,7 +396,7 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ciudad
+                  Ciudad *
                 </label>
                 <input
                   type="text"
@@ -355,7 +412,7 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Estado
+                  Estado *
                 </label>
                 <input
                   type="text"
@@ -368,7 +425,7 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Código Postal
+                  Código Postal *
                 </label>
                 <input
                   type="text"
@@ -401,11 +458,21 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
                   setEditingAddress(null);
                 }}
                 className="btn-secondary flex-1"
+                disabled={isSaving}
               >
                 Cancelar
               </button>
-              <button type="submit" className="btn-primary flex-1">
-                {editingAddress ? 'Actualizar' : 'Guardar'} Dirección
+              <button 
+                type="submit" 
+                className="btn-primary flex-1"
+                disabled={isSaving}
+              >
+                {isSaving 
+                  ? 'Guardando...' 
+                  : editingAddress 
+                    ? 'Actualizar Dirección' 
+                    : 'Guardar Dirección'
+                }
               </button>
             </div>
           </form>
