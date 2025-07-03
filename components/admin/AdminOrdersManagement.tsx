@@ -47,13 +47,16 @@ const ORDER_STATUSES = [
   { value: 'pending', label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800' },
   { value: 'processing', label: 'Procesando', color: 'bg-blue-100 text-blue-800' },
   { value: 'shipped', label: 'Enviado', color: 'bg-purple-100 text-purple-800' },
-  { value: 'completed', label: 'Entregado', color: 'bg-green-100 text-green-800' },
+  { value: 'delivered', label: 'Entregado', color: 'bg-green-100 text-green-800' },
   { value: 'cancelled', label: 'Cancelado', color: 'bg-red-100 text-red-800' },
 ];
 
 export default function AdminOrdersManagement({ orders: initialOrders }: AdminOrdersManagementProps) {
   const [orders, setOrders] = useState(initialOrders);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(
+    initialOrders.length > 0 ? initialOrders[0] : null
+    );
+
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState(false);
   
