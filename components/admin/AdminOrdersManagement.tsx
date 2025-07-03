@@ -16,7 +16,7 @@ interface Order {
   profiles: {
     full_name: string;
     email: string;
-  };
+  } | null;
   shipping_addresses: {
     name: string;
     address_line1: string;
@@ -118,11 +118,13 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
     });
   };
 
+  const totalRevenue = orders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+
   return (
     <div className="space-y-6">
-      {/* Filters */}
+      {/* Stats and Filters */}
       <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex flex-wrap gap-6 items-center justify-between">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Filtrar por estado
@@ -141,16 +143,22 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
             </select>
           </div>
           
-          <div className="flex gap-4 text-sm">
+          <div className="flex gap-6 text-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">{orders.length}</div>
               <div className="text-gray-600">Total Pedidos</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                ${orders.reduce((sum, order) => sum + order.total_amount, 0).toFixed(2)}
+                ${totalRevenue.toFixed(2)}
               </div>
               <div className="text-gray-600">Ingresos Totales</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {orders.filter(o => o.status === 'pending').length}
+              </div>
+              <div className="text-gray-600">Pendientes</div>
             </div>
           </div>
         </div>
@@ -187,7 +195,7 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-sm">
                     <User className="w-4 h-4 text-gray-500" />
-                    <span>{order.profiles.full_name}</span>
+                    <span>{order.profiles?.full_name || 'Usuario desconocido'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Package className="w-4 h-4 text-gray-500" />
@@ -195,8 +203,14 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <DollarSign className="w-4 h-4 text-gray-500" />
-                    <span className="font-medium">${order.total_amount.toFixed(2)}</span>
+                    <span className="font-medium">${order.total_amount?.toFixed(2) || '0.00'}</span>
                   </div>
+                  {order.shipping_addresses && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      <span>{order.shipping_addresses.city}, {order.shipping_addresses.state}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -234,6 +248,14 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
             <div className="text-center py-12 text-gray-500">
               <Package className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p>No se encontraron pedidos</p>
+              {statusFilter && (
+                <button
+                  onClick={() => setStatusFilter('')}
+                  className="text-primary hover:underline mt-2"
+                >
+                  Ver todos los pedidos
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -261,9 +283,10 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
                   <User className="w-4 h-4" />
                   Información del Cliente
                 </h4>
-                <div className="space-y-2 text-sm">
-                  <p><span className="font-medium">Nombre:</span> {selectedOrder.profiles.full_name}</p>
-                  <p><span className="font-medium">Email:</span> {selectedOrder.profiles.email}</p>
+                <div className="space-y-2 text-sm bg-gray-50 p-4 rounded-lg">
+                  <p><span className="font-medium">Nombre:</span> {selectedOrder.profiles?.full_name || 'Usuario desconocido'}</p>
+                  <p><span className="font-medium">Email:</span> {selectedOrder.profiles?.email || 'No disponible'}</p>
+                  <p><span className="font-medium">Fecha:</span> {formatDate(selectedOrder.created_at)}</p>
                 </div>
               </div>
 
@@ -274,7 +297,7 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
                     <MapPin className="w-4 h-4" />
                     Dirección de Envío
                   </h4>
-                  <div className="text-sm space-y-1">
+                  <div className="text-sm space-y-1 bg-gray-50 p-4 rounded-lg">
                     <p className="font-medium">{selectedOrder.shipping_addresses.name}</p>
                     <p>{selectedOrder.shipping_addresses.address_line1}</p>
                     {selectedOrder.shipping_addresses.address_line2 && (
@@ -295,7 +318,7 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
               <div className="mb-6">
                 <h4 className="font-medium mb-3 flex items-center gap-2">
                   <Package className="w-4 h-4" />
-                  Productos
+                  Productos ({selectedOrder.order_items.length})
                 </h4>
                 <div className="space-y-3">
                   {selectedOrder.order_items.map((item) => {
@@ -331,21 +354,24 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>${(selectedOrder.total_amount - selectedOrder.shipping_cost).toFixed(2)}</span>
+                    <span>${((selectedOrder.total_amount || 0) - (selectedOrder.shipping_cost || 0)).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Envío:</span>
-                    <span>${selectedOrder.shipping_cost.toFixed(2)}</span>
+                    <span>${(selectedOrder.shipping_cost || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-semibold text-base border-t pt-2">
                     <span>Total:</span>
-                    <span>${selectedOrder.total_amount.toFixed(2)}</span>
+                    <span className="text-primary">${(selectedOrder.total_amount || 0).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
 
               {/* Quick Actions */}
               <div className="mt-6 space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Cambiar Estado
+                </label>
                 <select
                   value={selectedOrder.status}
                   onChange={(e) => updateOrderStatus(selectedOrder.id, e.target.value)}
@@ -358,6 +384,9 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
                     </option>
                   ))}
                 </select>
+                {isUpdating && (
+                  <p className="text-sm text-gray-500">Actualizando estado...</p>
+                )}
               </div>
             </motion.div>
           ) : (
@@ -368,6 +397,14 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
           )}
         </div>
       </div>
+
+      {orders.length === 0 && (
+        <div className="text-center py-12 text-gray-500">
+          <Package className="w-16 h-16 mx-auto mb-6 text-gray-300" />
+          <h2 className="text-2xl font-bold mb-4">No hay pedidos aún</h2>
+          <p>Los pedidos aparecerán aquí cuando los clientes realicen compras.</p>
+        </div>
+      )}
     </div>
   );
 }

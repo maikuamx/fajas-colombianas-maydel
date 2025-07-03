@@ -44,6 +44,9 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
   
   const supabase = createClientComponentClient();
 
+  // Calculate total revenue from orders
+  const totalRevenue = orders.reduce((acc, order) => acc + (order.total_amount || 0), 0);
+
   const stats = [
     {
       label: 'Productos',
@@ -52,7 +55,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
       color: 'bg-blue-500',
     },
     {
-      label: 'Órdenes',
+      label: 'Pedidos',
       value: orders.length,
       icon: ShoppingCart,
       color: 'bg-green-500',
@@ -65,7 +68,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
     },
     {
       label: 'Ingresos',
-      value: `$${orders.reduce((acc, order) => acc + order.total_amount, 0).toFixed(2)}`,
+      value: `$${totalRevenue.toFixed(2)}`,
       icon: TrendingUp,
       color: 'bg-yellow-500',
     },
@@ -323,6 +326,29 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
         ))}
       </div>
 
+      {/* Recent Orders Section */}
+      {orders.length > 0 && (
+        <div className="card">
+          <h3 className="text-lg font-semibold mb-4">Pedidos Recientes</h3>
+          <div className="space-y-3">
+            {orders.slice(0, 5).map((order) => (
+              <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium">Pedido #{order.id.slice(0, 8)}</p>
+                  <p className="text-sm text-gray-600">
+                    {order.profiles?.full_name || 'Usuario desconocido'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium">${order.total_amount?.toFixed(2) || '0.00'}</p>
+                  <p className="text-sm text-gray-600">{order.status}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <h3 className="text-lg font-semibold">Gestión de Productos</h3>
@@ -489,7 +515,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                         <img
                           src={url}
                           alt={`Imagen ${index + 1}`}
-                          className="w-full h-full object-contain"
+                          className="w-full h-full object-cover"
                         />
                         <button
                           type="button"
@@ -582,7 +608,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   <img
                     src={firstImage}
                     alt={product.name}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                   {imageUrls.length > 1 && (
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">

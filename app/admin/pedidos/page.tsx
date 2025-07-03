@@ -1,22 +1,21 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import CustomerOrdersPage from '../../../components/orders/CustomerOrdersPage';
+import AdminOrdersManagement from '../../../components/admin/AdminOrdersManagement';
 
 export const dynamic = 'force-dynamic';
 
-export default async function OrdersPage() {
+export default async function AdminOrdersPage() {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (!session) {
-    redirect('/auth');
-  }
-
-  const { data: orders } = await supabase
+  
+  // Fetch orders with all related data
+  const { data: orders, error } = await supabase
     .from('orders')
     .select(`
       *,
+      profiles!orders_user_id_fkey (
+        full_name,
+        email
+      ),
       shipping_addresses (
         name,
         address_line1,
@@ -32,12 +31,19 @@ export default async function OrdersPage() {
         products (*)
       )
     `)
-    .eq('user_id', session.user.id)
     .order('created_at', { ascending: false });
 
+  console.log('Orders fetched for admin:', orders);
+  console.log('Orders error:', error);
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <CustomerOrdersPage orders={orders || []} />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Gestión de Pedidos</h1>
+        <p className="text-gray-600">Administra todos los pedidos de la tienda</p>
+      </div>
+      
+      <AdminOrdersManagement orders={orders || []} />
     </div>
   );
 }
