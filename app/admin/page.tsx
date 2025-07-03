@@ -13,21 +13,9 @@ export default async function AdminPage() {
     { data: profiles }
   ] = await Promise.all([
     supabase.from('products').select('*'),
-    supabase
-      .from('orders')
-      .select(`
-        *,
-        profiles!inner (
-          full_name,
-          email
-        )
-      `),
+    supabase.from('orders').select('*'),
     supabase.from('profiles').select('*')
   ]);
-
-  console.log('Orders fetched:', orders);
-  console.log('Products fetched:', products);
-  console.log('Profiles fetched:', profiles);
 
   return (
     <AdminDashboard

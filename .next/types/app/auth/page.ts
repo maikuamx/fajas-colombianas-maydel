@@ -1,4 +1,4 @@
-// File: C:\Users\Pepe\Documents\codigos\fajasmaydel\project\app\auth\page.tsx
+// File: C:\Users\Pepe\Documents\codigos\fajas-colombianas-maydel\app\auth\page.tsx
 import * as entry from '../../../../app/auth/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

@@ -12,7 +12,7 @@ export default async function AdminOrdersPage() {
     .from('orders')
     .select(`
       *,
-      profiles!orders_user_id_fkey (
+      profiles!orders_user_id_fkey1 (
         full_name,
         email
       ),
