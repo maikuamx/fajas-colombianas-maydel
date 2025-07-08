@@ -69,7 +69,7 @@ export default async function RootLayout({
       <body className="min-h-screen bg-white flex flex-col">
         <SessionProvider>
           <CartProvider initialSession={session}>
-            <Navbar session={session} userRole={userRole} />
+            <Navbar />
             <main className="flex-grow pt-20">
               {children}
             </main>

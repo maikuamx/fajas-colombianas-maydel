@@ -11,16 +11,17 @@ import type { Session } from "@supabase/supabase-js"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useCart } from "../lib/cart-context"
 import UserMenu from "./UserMenu"
+import { useSession } from './SessionProvider'
 
 interface NavbarProps {
   session: Session | null
   userRole: string | null
 }
 
-export default function Navbar({ session: initialSession, userRole: initialUserRole }: NavbarProps) {
+export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [session, setSession] = useState<Session | null>(initialSession)
-  const [userRole, setUserRole] = useState<string | null>(initialUserRole)
+  const session = useSession()
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [isClient, setIsClient] = useState(false)
   const { itemCount } = useCart()
   const supabase = createClientComponentClient()
@@ -32,50 +33,35 @@ export default function Navbar({ session: initialSession, userRole: initialUserR
   }, [])
 
   // Mantener la sesión actualizada
-  useEffect(() => {
-    if (!isClient) return
+useEffect(() => {
+  if (!session) {
+    setUserRole(null)
+    return
+  }
 
-    console.log("Setting up auth listener with initial:", { initialSession, initialUserRole })
+  const fetchRole = async () => {
+    try {
+      const supabase = createClientComponentClient()
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
 
-    setSession(initialSession)
-    setUserRole(initialUserRole)
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session?.user?.id || "no session")
-
-      setSession(session)
-
-      if (session) {
-        try {
-          const { data: profile, error } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", session.user.id)
-            .single()
-
-          if (error) {
-            console.error("Error fetching user role:", error)
-            setUserRole(null)
-          } else {
-            console.log("User role fetched:", profile?.role)
-            setUserRole(profile?.role || null)
-          }
-        } catch (error) {
-          console.error("Error in role fetch:", error)
-          setUserRole(null)
-        }
-      } else {
+      if (error) {
+        console.error('Error fetching user role:', error)
         setUserRole(null)
+      } else {
+        setUserRole(profile?.role ?? null)
       }
-    })
-
-    return () => {
-      console.log("Cleaning up auth listener")
-      subscription.unsubscribe()
+    } catch (error) {
+      console.error('Error fetching role:', error)
+      setUserRole(null)
     }
-  }, [isClient, supabase, initialSession, initialUserRole])
+  }
+
+  fetchRole()
+}, [session])
 
   const menuItems = [
     { href: "/", label: "Inicio" },
