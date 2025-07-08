@@ -54,15 +54,11 @@ export default function Footer() {
             <ul className="space-y-4">
               <li className="flex items-center space-x-3 text-gray-600">
                 <MapPin className="w-5 h-5 text-primary" />
-                <span>Ciudad de México, México</span>
+                <span>Chihuahua, Chihuahua, México</span>
               </li>
               <li className="flex items-center space-x-3 text-gray-600">
                 <Phone className="w-5 h-5 text-primary" />
-                <span>+52 (55) 1234-5678</span>
-              </li>
-              <li className="flex items-center space-x-3 text-gray-600">
-                <Mail className="w-5 h-5 text-primary" />
-                <span>contacto@maydelfajas.com</span>
+                <span>+52 (614) 371-6816</span>
               </li>
             </ul>
           </div>
