@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ShoppingBag, LogIn, Package } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useCart } from '../lib/cart-context';
 import UserMenu from './UserMenu';
 
@@ -15,38 +14,10 @@ interface NavbarProps {
   userRole: string | null;
 }
 
-export default function Navbar({ session: initialSession, userRole: initialUserRole }: NavbarProps) {
+export default function Navbar({ session, userRole }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [session, setSession] = useState(initialSession);
-  const [userRole, setUserRole] = useState(initialUserRole);
   const { itemCount } = useCart();
-  const supabase = createClientComponentClient();
 
-  // Mantener la sesión actualizada
-  useEffect(() => {
-    // Inicializar con los valores del servidor
-    setSession(initialSession);
-    setUserRole(initialUserRole);
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      
-      if (session) {
-        // Obtener el rol del usuario
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        setUserRole(profile?.role || null);
-      } else {
-        setUserRole(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [supabase, initialSession, initialUserRole]);
   const menuItems = [
     { href: '/', label: 'Inicio' },
     { href: '/productos', label: 'Productos' },
