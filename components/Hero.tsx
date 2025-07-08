@@ -112,7 +112,7 @@ export default function Hero() {
             className="relative h-[600px] rounded-2xl overflow-hidden shadow-2xl"
           >
             <Image
-              src="https://images.pexels.com/photos/7319158/pexels-photo-7319158.jpeg"
+              src="/banner.png"
               alt="Modelo usando faja Maydel"
               fill
               className="object-cover object-center"
