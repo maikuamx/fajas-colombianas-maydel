@@ -86,7 +86,7 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
   };
 
   const calculateShippingCost = (city: string): number => {
-    return city.toLowerCase().trim() === 'chihuahua' ? 120 : 200;
+    return city.toLowerCase().trim() === 'chihuahua' ? 0 : 200;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
