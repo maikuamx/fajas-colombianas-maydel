@@ -3,9 +3,16 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, MessageCircle } from 'lucide-react';
 
 export default function Hero() {
+  const handleWhatsAppContact = () => {
+    const phoneNumber = '5216141336763'; // Reemplaza con tu número de WhatsApp
+    const message = encodeURIComponent('¡Hola! Me interesa conocer más sobre las fajas Maydel. ¿Podrían ayudarme?');
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   return (
     <section className="relative min-h-[90vh] flex items-center hero-gradient">
       <div className="container mx-auto px-4 py-16">
@@ -50,7 +57,7 @@ export default function Hero() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="flex flex-wrap gap-4"
+              className="flex flex-wrap gap-4 items-center"
             >
               <Link
                 href="/productos"
@@ -65,6 +72,13 @@ export default function Hero() {
               >
                 Conoce más
               </Link>
+              <button
+                onClick={handleWhatsAppContact}
+                className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Contactar por WhatsApp
+              </button>
             </motion.div>
 
             <motion.div
@@ -98,7 +112,7 @@ export default function Hero() {
             className="relative h-[600px] rounded-2xl overflow-hidden shadow-2xl"
           >
             <Image
-              src="/banner.png"
+              src="https://images.pexels.com/photos/7319158/pexels-photo-7319158.jpeg"
               alt="Modelo usando faja Maydel"
               fill
               className="object-cover object-center"

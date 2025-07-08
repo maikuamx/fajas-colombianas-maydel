@@ -7,6 +7,7 @@ import './globals.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { CartProvider } from '../lib/cart-context';
+import SessionProvider from '../components/SessionProvider';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,14 +67,16 @@ export default async function RootLayout({
         <script src="https://upload-widget.cloudinary.com/global/all.js" async />
       </head>
       <body className="min-h-screen bg-white flex flex-col">
-        <CartProvider initialSession={session}>
-          <Navbar session={session} userRole={userRole} />
-          <main className="flex-grow pt-20">
-            {children}
-          </main>
-          <Footer />
-          <Toaster position="top-right" />
-        </CartProvider>
+        <SessionProvider>
+          <CartProvider initialSession={session}>
+            <Navbar session={session} userRole={userRole} />
+            <main className="flex-grow pt-20">
+              {children}
+            </main>
+            <Footer />
+            <Toaster position="top-right" />
+          </CartProvider>
+        </SessionProvider>
       </body>
     </html>
   );

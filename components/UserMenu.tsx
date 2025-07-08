@@ -20,12 +20,16 @@ export default function UserMenu({ role, isMobile, onClose }: UserMenuProps) {
 
   const handleSignOut = async () => {
     try {
+      // Limpiar cualquier dato local antes de cerrar sesión
+      localStorage.removeItem('cart_session_id');
+      
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
       setIsOpen(false);
       if (onClose) onClose();
       
+      // Forzar recarga de la página para limpiar el estado
       router.refresh();
       router.push('/');
       toast.success('Sesión cerrada exitosamente');

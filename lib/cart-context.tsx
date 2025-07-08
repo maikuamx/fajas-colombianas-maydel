@@ -405,7 +405,29 @@ export function CartProvider({ children, initialSession }: CartProviderProps) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Configurar la persistencia de sesión en Supabase
+    const configureAuth = async () => {
+      try {
+        // Verificar la sesión actual
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // Configurar opciones de persistencia
+          await supabase.auth.setSession({
+            access_token: session.access_token,
+            refresh_token: session.refresh_token,
+          });
+        }
+      } catch (error) {
+        console.error('Error configuring auth persistence:', error);
+      }
+    };
+
+    configureAuth();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session ? 'Session exists' : 'No session');
+      
       if (event === 'SIGNED_IN' && session) {
         // User signed in, merge anonymous cart if exists
         const sessionId = localStorage.getItem('cart_session_id');
@@ -492,6 +514,9 @@ export function CartProvider({ children, initialSession }: CartProviderProps) {
       } else if (event === 'SIGNED_OUT') {
         // User signed out, reload cart for anonymous session
         loadCartItems();
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Token was refreshed, session is still valid
+        console.log('Token refreshed, session maintained');
       }
     });
 
