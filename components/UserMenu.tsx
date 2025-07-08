@@ -19,24 +19,26 @@ export default function UserMenu({ role, isMobile, onClose }: UserMenuProps) {
   const supabase = createClientComponentClient();
 
   const handleSignOut = async () => {
-    try {
-      // Limpiar cualquier dato local antes de cerrar sesión
-      localStorage.removeItem('cart_session_id');
-      
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      setIsOpen(false);
-      if (onClose) onClose();
-      
-      // Forzar recarga de la página para limpiar el estado
-      router.refresh();
-      router.push('/');
-      toast.success('Sesión cerrada exitosamente');
-    } catch (error) {
-      toast.error('Error al cerrar sesión');
+  try {
+    localStorage.removeItem('cart_session_id');
+
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
+
+    if (error && error.status !== 401) {
+      // Si es 401, ya no hay sesión activa; no es un fallo crítico
+      throw error;
     }
-  };
+
+    if (onClose) onClose();
+    router.push('/');
+    router.refresh();
+    toast.success('Sesión cerrada exitosamente');
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+    toast.error('Error al cerrar sesión');
+  }
+};
+
 
   if (isMobile) {
     return (

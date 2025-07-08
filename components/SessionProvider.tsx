@@ -15,16 +15,20 @@ export default function SessionProvider({ children }: { children: React.ReactNod
   const supabase = createClientComponentClient()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-    })
+  const init = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase.auth.setSession({
+  access_token: '',
+  refresh_token: '',
+});
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
+    }
+  };
 
-    return () => subscription.unsubscribe()
-  }, [])
+  init();
+}, []);
+
 
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>
 }

@@ -7,7 +7,7 @@ import { ArrowRight, MessageCircle } from 'lucide-react';
 
 export default function Hero() {
   const handleWhatsAppContact = () => {
-    const phoneNumber = '5216141336763'; // Reemplaza con tu número de WhatsApp
+    const phoneNumber = '5216143716816'; // Reemplaza con tu número de WhatsApp
     const message = encodeURIComponent('¡Hola! Me interesa conocer más sobre las fajas Maydel. ¿Podrían ayudarme?');
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
     window.open(whatsappUrl, '_blank');
