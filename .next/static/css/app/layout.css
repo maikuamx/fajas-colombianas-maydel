@@ -757,6 +757,9 @@ video {
 .z-50 {
   z-index: 50;
 }
+.z-40 {
+  z-index: 40;
+}
 .col-span-1 {
   grid-column: span 1 / span 1;
 }
@@ -767,6 +770,10 @@ video {
 .mx-auto {
   margin-left: auto;
   margin-right: auto;
+}
+.my-1 {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
 }
 .mb-1 {
   margin-bottom: 0.25rem;
@@ -1044,6 +1051,15 @@ video {
 }
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+@keyframes pulse {
+
+  50% {
+    opacity: .5;
+  }
+}
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 .cursor-default {
   cursor: default;
@@ -1372,6 +1388,10 @@ video {
 .bg-yellow-500 {
   --tw-bg-opacity: 1;
   background-color: rgb(234 179 8 / var(--tw-bg-opacity));
+}
+.bg-red-50 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 242 242 / var(--tw-bg-opacity));
 }
 .bg-opacity-10 {
   --tw-bg-opacity: 0.1;

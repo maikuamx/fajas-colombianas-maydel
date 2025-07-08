@@ -28,35 +28,51 @@ export default function AuthForm() {
 
     try {
       if (isLogin) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        console.log('AuthForm: Attempting login');
+        
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
         
-        if (signInError) throw signInError;
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', (await supabase.auth.getUser()).data.user?.id)
-          .single();
-
-        toast.success('¡Bienvenido de nuevo!');
-        
-        if (profile?.role === 'admin') {
-          router.push('/admin');
-        } else {
-          router.push('/');
+        if (signInError) {
+          console.error('Login error:', signInError);
+          throw signInError;
         }
-        
-        router.refresh();
+
+        if (data.session) {
+          console.log('AuthForm: Login successful');
+          
+          // Check user role
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.session.user.id)
+            .single();
+
+          toast.success('¡Bienvenido de nuevo!');
+          
+          // Force a complete page refresh to ensure proper session handling
+          setTimeout(() => {
+            if (profile?.role === 'admin') {
+              window.location.href = '/admin';
+            } else {
+              window.location.href = '/';
+            }
+          }, 100);
+        }
       } else {
+        console.log('AuthForm: Attempting signup');
+        
         const { error: signUpError, data: authData } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
         });
         
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          console.error('Signup error:', signUpError);
+          throw signUpError;
+        }
 
         if (authData.user) {
           const { error: profileError } = await supabase
@@ -72,20 +88,38 @@ export default function AuthForm() {
             .select()
             .single();
 
-          if (profileError) throw profileError;
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+            throw profileError;
+          }
 
-          toast.success('¡Cuenta creada exitosamente!');
+          toast.success('¡Cuenta creada exitosamente! Por favor inicia sesión.');
           setIsLogin(true);
           setFormData({
-            email: '',
+            email: formData.email,
             password: '',
             full_name: '',
           });
         }
       }
     } catch (error: any) {
-      toast.error(error.message);
-      setError(error.message);
+      console.error('Auth error:', error);
+      let errorMessage = 'Error desconocido';
+      
+      if (error.message) {
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'Credenciales incorrectas';
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'Por favor confirma tu email';
+        } else if (error.message.includes('User already registered')) {
+          errorMessage = 'Este email ya está registrado';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -148,6 +182,8 @@ export default function AuthForm() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="input-field pl-10"
                 required
+                disabled={loading}
+                autoComplete="email"
               />
             </div>
           </div>
@@ -165,6 +201,9 @@ export default function AuthForm() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="input-field pl-10"
                 required
+                disabled={loading}
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                minLength={6}
               />
             </div>
           </div>
@@ -190,6 +229,8 @@ export default function AuthForm() {
                       onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                       className="input-field pl-10"
                       required
+                      disabled={loading}
+                      autoComplete="name"
                     />
                   </div>
                 </div>
@@ -203,7 +244,7 @@ export default function AuthForm() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="text-sm text-red-500"
+                className="text-sm text-red-500 bg-red-50 p-3 rounded-lg"
               >
                 {error}
               </motion.p>
@@ -215,7 +256,14 @@ export default function AuthForm() {
             className="btn-primary w-full"
             disabled={loading}
           >
-            {loading ? 'Cargando...' : isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Cargando...
+              </div>
+            ) : (
+              isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'
+            )}
           </button>
 
           <p className="text-center text-sm text-gray-600">
@@ -232,6 +280,7 @@ export default function AuthForm() {
                 });
               }}
               className="text-primary font-semibold hover:underline"
+              disabled={loading}
             >
               {isLogin ? 'Regístrate' : 'Inicia Sesión'}
             </button>

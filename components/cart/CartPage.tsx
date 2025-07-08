@@ -27,6 +27,7 @@ interface ShippingAddress {
   phone?: string;
   is_default: boolean;
   shipping_cost: number;
+  is_pickup?: boolean;
 }
 
 export default function CartPage({ isAuthenticated }: CartPageProps) {
@@ -64,7 +65,7 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
     }
 
     if (!selectedAddress) {
-      toast.error('Por favor selecciona una dirección de envío');
+      toast.error('Por favor selecciona una opción de envío');
       setShowAddressForm(true);
       return;
     }
@@ -87,10 +88,11 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
             color_name: item.color?.color_name,
           })),
           total: finalTotal,
-          shipping_address_id: selectedAddress.id,
+          shipping_address_id: selectedAddress.id !== 'pickup' ? selectedAddress.id : null,
           shipping_cost: shippingCost,
           billing_data: billingData,
           tax_amount: taxAmount,
+          is_pickup: selectedAddress.is_pickup || false,
         }),
       });
 
@@ -293,8 +295,12 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
               
               {selectedAddress && (
                 <div className="flex justify-between">
-                  <span>Envío a {selectedAddress.city}</span>
-                  <span>${shippingCost.toFixed(2)}</span>
+                  <span>
+                    {selectedAddress.is_pickup ? 'Recoger en tienda' : `Envío a ${selectedAddress.city}`}
+                  </span>
+                  <span className={shippingCost === 0 ? 'text-green-600 font-medium' : ''}>
+                    {shippingCost === 0 ? 'Gratis' : `$${shippingCost.toFixed(2)}`}
+                  </span>
                 </div>
               )}
               
@@ -335,7 +341,7 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
 
             {isAuthenticated && (
               <p className="text-xs text-red-600 text-center mt-2">
-                {!selectedAddress && "Selecciona una dirección de envío para continuar"}
+                {!selectedAddress && "Selecciona una opción de envío para continuar"}
                 {selectedAddress && billingData?.requires_invoice && (!billingData.rfc || !billingData.razon_social || !billingData.full_name || !billingData.email || !billingData.phone) && "Complete todos los campos de facturación"}
               </p>
             )}

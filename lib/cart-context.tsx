@@ -3,7 +3,7 @@
 import { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'sonner';
-import type { Session } from '@supabase/auth-helpers-nextjs';
+import type { User } from '@supabase/auth-helpers-nextjs';
 
 interface CartItem {
   id: string;
@@ -118,10 +118,10 @@ export function useCart() {
 
 interface CartProviderProps {
   children: ReactNode;
-  initialSession: Session | null;
+  initialUser: User | null;
 }
 
-export function CartProvider({ children, initialSession }: CartProviderProps) {
+export function CartProvider({ children, initialUser }: CartProviderProps) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const supabase = createClientComponentClient();
 
@@ -139,21 +139,21 @@ export function CartProvider({ children, initialSession }: CartProviderProps) {
   // Get or create cart
   const getCart = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
       
       let cart;
-      if (session) {
+      if (user) {
         // Authenticated user
         const { data } = await supabase
           .from('carts')
           .select('*')
-          .eq('user_id', session.user.id)
+          .eq('user_id', user.id)
           .single();
         
         if (!data) {
           const { data: newCart, error } = await supabase
             .from('carts')
-            .insert([{ user_id: session.user.id }])
+            .insert([{ user_id: user.id }])
             .select()
             .single();
           
@@ -394,108 +394,63 @@ export function CartProvider({ children, initialSession }: CartProviderProps) {
     }
   };
 
-  // Load cart on mount
+  // Load cart on mount and when window becomes visible
   useEffect(() => {
     if (typeof window !== 'undefined') {
       loadCartItems();
+
+      // Reload cart when window becomes visible (handles tab switching)
+      const handleVisibilityChange = () => {
+        if (!document.hidden) {
+          loadCartItems();
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
   }, []);
 
-  // Listen for auth changes to merge carts
+  // Listen for auth changes with improved handling
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    let timeoutId: NodeJS.Timeout;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Cart: Auth state changed:', event, session?.user?.id);
+      
+      // Clear any existing timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
       if (event === 'SIGNED_IN' && session) {
-        // User signed in, merge anonymous cart if exists
-        const sessionId = localStorage.getItem('cart_session_id');
-        if (sessionId) {
-          try {
-            // Get anonymous cart
-            const { data: anonymousCart } = await supabase
-              .from('carts')
-              .select('*')
-              .eq('session_id', sessionId)
-              .single();
-
-            if (anonymousCart) {
-              // Get or create user cart
-              let { data: userCart } = await supabase
-                .from('carts')
-                .select('*')
-                .eq('user_id', session.user.id)
-                .single();
-
-              if (!userCart) {
-                const { data: newCart } = await supabase
-                  .from('carts')
-                  .insert([{ user_id: session.user.id }])
-                  .select()
-                  .single();
-                userCart = newCart;
-              }
-
-              // Move items from anonymous cart to user cart
-              const { data: anonymousItems } = await supabase
-                .from('cart_items')
-                .select('*')
-                .eq('cart_id', anonymousCart.id);
-
-              if (anonymousItems && anonymousItems.length > 0) {
-                for (const item of anonymousItems) {
-                  // Check if item already exists in user cart
-                  const { data: existingItem } = await supabase
-                    .from('cart_items')
-                    .select('*')
-                    .eq('cart_id', userCart.id)
-                    .eq('product_id', item.product_id)
-                    .eq('color_id', item.color_id)
-                    .single();
-
-                  if (existingItem) {
-                    // Update quantity
-                    await supabase
-                      .from('cart_items')
-                      .update({ quantity: existingItem.quantity + item.quantity })
-                      .eq('id', existingItem.id);
-                  } else {
-                    // Add new item
-                    await supabase
-                      .from('cart_items')
-                      .insert([{
-                        cart_id: userCart.id,
-                        product_id: item.product_id,
-                        color_id: item.color_id,
-                        quantity: item.quantity,
-                        price_at_add: item.price_at_add,
-                      }]);
-                  }
-                }
-
-                // Delete anonymous cart
-                await supabase
-                  .from('carts')
-                  .delete()
-                  .eq('id', anonymousCart.id);
-              }
-
-              // Clear session ID
-              localStorage.removeItem('cart_session_id');
-            }
-          } catch (error) {
-            console.error('Error merging carts:', error);
-          }
-        }
-        
-        // Reload cart items
-        loadCartItems();
+        console.log('Cart: User signed in, reloading cart');
+        // User signed in, reload cart after a short delay
+        timeoutId = setTimeout(() => {
+          loadCartItems();
+        }, 500);
       } else if (event === 'SIGNED_OUT') {
-        // User signed out, reload cart for anonymous session
-        loadCartItems();
+        console.log('Cart: User signed out, clearing cart');
+        // User signed out, clear cart immediately
+        dispatch({ type: 'CLEAR_CART' });
+        // Then reload for anonymous session after a delay
+        timeoutId = setTimeout(() => {
+          loadCartItems();
+        }, 1000);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, []);
 
   const value: CartContextType = {

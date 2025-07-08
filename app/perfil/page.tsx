@@ -7,16 +7,16 @@ export const dynamic = 'force-dynamic';
 
 export default async function ProfilePage() {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect('/auth');
   }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single();
 
   const { data: orders } = await supabase
@@ -28,7 +28,7 @@ export default async function ProfilePage() {
         products (*)
       )
     `)
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
   return (

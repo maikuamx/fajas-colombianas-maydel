@@ -7,10 +7,20 @@ export const dynamic = 'force-dynamic';
 
 export default async function AuthPage() {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
-
-  if (session) {
-    redirect('/');
+  
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error) {
+      console.error('Error getting session in auth page:', error);
+    }
+    
+    if (user) {
+      redirect('/');
+    }
+  } catch (error) {
+    console.error('Error in auth page:', error);
+    // Continue to show auth form if there's an error
   }
 
   return (

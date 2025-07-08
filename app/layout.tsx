@@ -48,14 +48,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
   let userRole = null;
-  if (session) {
+  if (user) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single();
     
     userRole = profile?.role;
@@ -68,7 +68,7 @@ export default async function RootLayout({
       </head>
       <body className="min-h-screen bg-white flex flex-col">
         <SessionProvider>
-          <CartProvider initialSession={session}>
+          <CartProvider initialUser={user}>
             <Navbar />
             <main className="flex-grow pt-20">
               {children}

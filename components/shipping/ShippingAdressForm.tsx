@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { motion } from 'framer-motion';
-import { Plus, MapPin, Edit2, Trash2, Check } from 'lucide-react';
+import { Plus, MapPin, Edit2, Trash2, Check, Store } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ShippingAddress {
@@ -18,12 +18,28 @@ interface ShippingAddress {
   phone?: string;
   is_default: boolean;
   shipping_cost: number;
+  is_pickup?: boolean;
 }
 
 interface ShippingAddressFormProps {
   onAddressSelect: (address: ShippingAddress) => void;
   selectedAddressId?: string;
 }
+
+const PICKUP_ADDRESS: ShippingAddress = {
+  id: 'pickup',
+  name: 'Recoger en Tienda',
+  address_line1: 'Tienda Maydel Fajas',
+  address_line2: 'Centro de la ciudad',
+  city: 'Chihuahua',
+  state: 'Chihuahua',
+  postal_code: '31000',
+  country: 'México',
+  phone: '+52 (614) 371-6816',
+  is_default: false,
+  shipping_cost: 0,
+  is_pickup: true,
+};
 
 export default function ShippingAddressForm({ onAddressSelect, selectedAddressId }: ShippingAddressFormProps) {
   const [addresses, setAddresses] = useState<ShippingAddress[]>([]);
@@ -51,17 +67,17 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
 
   const loadAddresses = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (!session) {
-        console.error('No session found');
+      if (!user) {
+        console.error('No user found');
         return;
       }
 
       const { data, error } = await supabase
         .from('shipping_addresses')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('user_id', user.id)
         .order('is_default', { ascending: false })
         .order('created_at', { ascending: false });
 
@@ -72,10 +88,13 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
       
       setAddresses(data || []);
       
-      // Auto-select default address if none selected
+      // Auto-select default address or pickup if none selected
       if (!selectedAddressId && data && data.length > 0) {
         const defaultAddress = data.find(addr => addr.is_default) || data[0];
         onAddressSelect(defaultAddress);
+      } else if (!selectedAddressId) {
+        // If no addresses, auto-select pickup
+        onAddressSelect(PICKUP_ADDRESS);
       }
     } catch (error) {
       console.error('Error loading addresses:', error);
@@ -86,7 +105,7 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
   };
 
   const calculateShippingCost = (city: string): number => {
-    return city.toLowerCase().trim() === 'chihuahua' ? 0 : 200;
+    return city.toLowerCase().trim() === 'chihuahua' ? 120 : 200;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,15 +113,15 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
     setIsSaving(true);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (!session) {
-        throw new Error('No hay sesión activa');
+      if (!user) {
+        throw new Error('No hay usuario autenticado');
       }
 
       const addressData = {
         ...formData,
-        user_id: session.user.id,
+        user_id: user.id,
         shipping_cost: calculateShippingCost(formData.city),
       };
 
@@ -113,7 +132,7 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
           .from('shipping_addresses')
           .update(addressData)
           .eq('id', editingAddress.id)
-          .eq('user_id', session.user.id)
+          .eq('user_id', user.id)
           .select()
           .single();
 
@@ -184,28 +203,25 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
 
   const handleDelete = async (id: string) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (!session) {
-        throw new Error('No hay sesión activa');
+      if (!user) {
+        throw new Error('No hay usuario autenticado');
       }
 
       const { error } = await supabase
         .from('shipping_addresses')
         .delete()
         .eq('id', id)
-        .eq('user_id', session.user.id);
+        .eq('user_id', user.id);
 
       if (error) throw error;
       
       setAddresses(prev => prev.filter(addr => addr.id !== id));
       
-      // If deleted address was selected, clear selection
+      // If deleted address was selected, select pickup
       if (selectedAddressId === id) {
-        const remainingAddresses = addresses.filter(addr => addr.id !== id);
-        if (remainingAddresses.length > 0) {
-          onAddressSelect(remainingAddresses[0]);
-        }
+        onAddressSelect(PICKUP_ADDRESS);
       }
       
       toast.success('Dirección eliminada exitosamente');
@@ -222,6 +238,8 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
       </div>
     );
   }
+
+  const allAddresses = [PICKUP_ADDRESS, ...addresses];
 
   return (
     <div className="space-y-6">
@@ -252,7 +270,7 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
 
       {/* Address List */}
       <div className="space-y-3">
-        {addresses.map((address) => (
+        {allAddresses.map((address) => (
           <motion.div
             key={address.id}
             initial={{ opacity: 0, y: 10 }}
@@ -267,8 +285,17 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="w-4 h-4 text-gray-500" />
+                  {address.is_pickup ? (
+                    <Store className="w-4 h-4 text-primary" />
+                  ) : (
+                    <MapPin className="w-4 h-4 text-gray-500" />
+                  )}
                   <span className="font-medium">{address.name}</span>
+                  {address.is_pickup && (
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                      Gratis
+                    </span>
+                  )}
                   {address.is_default && (
                     <span className="text-xs bg-primary text-white px-2 py-1 rounded">
                       Por defecto
@@ -289,40 +316,46 @@ export default function ShippingAddressForm({ onAddressSelect, selectedAddressId
                 {address.phone && (
                   <p className="text-sm text-gray-600">Tel: {address.phone}</p>
                 )}
-                <p className="text-sm font-medium text-primary mt-2">
-                  Costo de envío: ${address.shipping_cost}
+                <p className={`text-sm font-medium mt-2 ${address.shipping_cost === 0 ? 'text-green-600' : 'text-primary'}`}>
+                  {address.shipping_cost === 0 ? 'Envío gratuito' : `Costo de envío: $${address.shipping_cost}`}
                 </p>
+                {address.is_pickup && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Disponible de lunes a viernes de 9:00 AM a 6:00 PM
+                  </p>
+                )}
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit(address);
-                  }}
-                  className="p-2 text-gray-500 hover:text-primary rounded-full hover:bg-gray-100"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(address.id);
-                  }}
-                  className="p-2 text-gray-500 hover:text-red-600 rounded-full hover:bg-gray-100"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              {!address.is_pickup && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(address);
+                    }}
+                    className="p-2 text-gray-500 hover:text-primary rounded-full hover:bg-gray-100"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(address.id);
+                    }}
+                    className="p-2 text-gray-500 hover:text-red-600 rounded-full hover:bg-gray-100"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         ))}
       </div>
 
       {addresses.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <MapPin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-          <p>No tienes direcciones guardadas</p>
-          <p className="text-sm">Agrega una dirección para continuar</p>
+        <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-lg">
+          <MapPin className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+          <p>Puedes recoger en tienda o agregar una dirección de envío</p>
         </div>
       )}
 

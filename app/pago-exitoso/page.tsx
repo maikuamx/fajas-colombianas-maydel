@@ -16,9 +16,9 @@ export default async function PaymentSuccessPage({
   searchParams: { session_id?: string };
 }) {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect('/auth');
   }
 
@@ -43,7 +43,7 @@ export default async function PaymentSuccessPage({
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert([{
-          user_id: session.user.id,
+          user_id: user.id,
           status: 'completed',
           total_amount: checkoutSession.amount_total! / 100, // Convert from cents
           shipping_address_id: shippingAddressId || null,
@@ -80,7 +80,7 @@ export default async function PaymentSuccessPage({
         const { error: billingError } = await supabase
           .from('billing_info')
           .insert([{
-            user_id: session.user.id,
+            user_id: user.id,
             order_id: order.id,
             ...billingData,
           }]);
@@ -94,7 +94,7 @@ export default async function PaymentSuccessPage({
       const { data: cart } = await supabase
         .from('carts')
         .select('id')
-        .eq('user_id', session.user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (cart) {

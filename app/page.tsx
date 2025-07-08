@@ -11,10 +11,10 @@ export default async function Home() {
   const supabase = createServerComponentClient({ cookies });
   
   const [
-    { data: { session } },
+    { data: { user } },
     { data: products }
   ] = await Promise.all([
-    supabase.auth.getSession(),
+    supabase.auth.getUser(),
     supabase
       .from('products')
       .select(`
@@ -25,11 +25,11 @@ export default async function Home() {
   ]);
 
   let userRole = null;
-  if (session) {
+  if (user) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', user.id)
       .single();
     
     userRole = profile?.role;
@@ -41,7 +41,7 @@ export default async function Home() {
       <FeaturedProducts 
         products={products || []} 
         userRole={userRole}
-        isAuthenticated={!!session}
+        isAuthenticated={!!user}
       />
       <Benefits />
       <Testimonials />

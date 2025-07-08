@@ -13,55 +13,51 @@ import { useCart } from "../lib/cart-context"
 import UserMenu from "./UserMenu"
 import { useSession } from './SessionProvider'
 
-interface NavbarProps {
-  session: Session | null
-  userRole: string | null
-}
-
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const session = useSession()
   const [userRole, setUserRole] = useState<string | null>(null)
   const [isClient, setIsClient] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const { itemCount } = useCart()
   const supabase = createClientComponentClient()
 
   // Asegurar que estamos en el cliente
   useEffect(() => {
     setIsClient(true)
+    setIsLoading(false)
     console.log("Navbar mounted on client")
   }, [])
 
   // Mantener la sesión actualizada
-useEffect(() => {
-  if (!session) {
-    setUserRole(null)
-    return
-  }
-
-  const fetchRole = async () => {
-    try {
-      const supabase = createClientComponentClient()
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single()
-
-      if (error) {
-        console.error('Error fetching user role:', error)
-        setUserRole(null)
-      } else {
-        setUserRole(profile?.role ?? null)
-      }
-    } catch (error) {
-      console.error('Error fetching role:', error)
+  useEffect(() => {
+    if (!session) {
       setUserRole(null)
+      return
     }
-  }
 
-  fetchRole()
-}, [session])
+    const fetchRole = async () => {
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
+
+        if (error) {
+          console.error('Error fetching user role:', error)
+          setUserRole(null)
+        } else {
+          setUserRole(profile?.role ?? null)
+        }
+      } catch (error) {
+        console.error('Error fetching role:', error)
+        setUserRole(null)
+      }
+    }
+
+    fetchRole()
+  }, [session, supabase])
 
   const menuItems = [
     { href: "/", label: "Inicio" },
@@ -90,8 +86,8 @@ useEffect(() => {
     // No prevenir default, dejar que Next.js maneje la navegación
   }
 
-  // No renderizar hasta que estemos en el cliente
-  if (!isClient) {
+  // Show loading state during initial load
+  if (!isClient || isLoading) {
     return (
       <nav className="fixed top-0 left-0 right-0 bg-white z-50 shadow-sm">
         <div className="container mx-auto px-4">
@@ -107,7 +103,7 @@ useEffect(() => {
               ))}
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">Cargando...</span>
+              <div className="animate-pulse bg-gray-200 rounded-full w-8 h-8"></div>
             </div>
           </div>
         </div>

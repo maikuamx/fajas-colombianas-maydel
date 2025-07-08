@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
@@ -15,48 +15,89 @@ interface UserMenuProps {
 
 export default function UserMenu({ role, isMobile, onClose }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = createClientComponentClient();
 
-  const handleSignOut = async () => {
-  try {
-    localStorage.removeItem('cart_session_id');
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
 
-    const { error } = await supabase.auth.signOut({ scope: 'local' });
-
-    if (error && error.status !== 401) {
-      // Si es 401, ya no hay sesión activa; no es un fallo crítico
-      throw error;
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
 
-    if (onClose) onClose();
-    router.push('/');
-    router.refresh();
-    toast.success('Sesión cerrada exitosamente');
-  } catch (error) {
-    console.error('Error al cerrar sesión:', error);
-    toast.error('Error al cerrar sesión');
-  }
-};
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
 
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+    
+    setIsSigningOut(true);
+    
+    try {
+      console.log('UserMenu: Starting sign out process');
+      
+      // Clear local storage first
+      localStorage.removeItem('cart_session_id');
+      
+      // Sign out from Supabase with proper scope
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      
+      if (error) {
+        console.error('Sign out error:', error);
+        // Don't throw error for 401 (already signed out)
+        if (error.status !== 401) {
+          throw error;
+        }
+      }
+
+      console.log('UserMenu: Sign out successful');
+
+      // Close menu and callback
+      setIsOpen(false);
+      if (onClose) onClose();
+      
+      toast.success('Sesión cerrada exitosamente');
+      
+      // Force complete page refresh to clear all state
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
+      
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      toast.error('Error al cerrar sesión');
+      setIsSigningOut(false);
+    }
+  };
 
   if (isMobile) {
     return (
       <button
         onClick={handleSignOut}
-        className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors py-2"
+        disabled={isSigningOut}
+        className="flex items-center space-x-2 text-red-600 hover:text-red-700 transition-colors py-2 disabled:opacity-50"
       >
         <LogOut className="w-5 h-5" />
-        <span>Cerrar Sesión</span>
+        <span>{isSigningOut ? 'Cerrando...' : 'Cerrar Sesión'}</span>
       </button>
     );
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 hover:bg-gray-100 rounded-full transition-colors relative group"
+        disabled={isSigningOut}
       >
         <User className="w-6 h-6" />
         <span className="absolute top-full left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -65,11 +106,11 @@ export default function UserMenu({ role, isMobile, onClose }: UserMenuProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50">
+        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-50 border border-gray-200">
           {role === 'admin' ? (
             <Link
               href="/admin"
-              className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
+              className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
               onClick={() => {
                 setIsOpen(false);
                 if (onClose) onClose();
@@ -82,7 +123,7 @@ export default function UserMenu({ role, isMobile, onClose }: UserMenuProps) {
             <>
               <Link
                 href="/perfil"
-                className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
+                className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
                 onClick={() => {
                   setIsOpen(false);
                   if (onClose) onClose();
@@ -93,7 +134,7 @@ export default function UserMenu({ role, isMobile, onClose }: UserMenuProps) {
               </Link>
               <Link
                 href="/pedidos"
-                className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100"
+                className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 transition-colors"
                 onClick={() => {
                   setIsOpen(false);
                   if (onClose) onClose();
@@ -104,12 +145,14 @@ export default function UserMenu({ role, isMobile, onClose }: UserMenuProps) {
               </Link>
             </>
           )}
+          <hr className="my-1 border-gray-200" />
           <button
             onClick={handleSignOut}
-            className="flex items-center w-full px-4 py-2 text-red-600 hover:bg-gray-100"
+            disabled={isSigningOut}
+            className="flex items-center w-full px-4 py-2 text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
           >
             <LogOut className="w-5 h-5 mr-2" />
-            Cerrar Sesión
+            {isSigningOut ? 'Cerrando...' : 'Cerrar Sesión'}
           </button>
         </div>
       )}

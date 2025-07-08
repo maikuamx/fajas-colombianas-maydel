@@ -7,9 +7,9 @@ export const dynamic = 'force-dynamic';
 
 export default async function OrdersPage() {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect('/auth');
   }
 
@@ -42,7 +42,7 @@ export default async function OrdersPage() {
         )
       )
     `)
-    .eq('user_id', session.user.id)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
   return (

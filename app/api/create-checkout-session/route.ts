@@ -10,9 +10,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerComponentClient({ cookies });
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       success_url: `${process.env.NEXT_PUBLIC_API_URL}/pago-exitoso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_API_URL}/carrito`,
       metadata: {
-        user_id: session.user.id,
+        user_id: user.id,
         items: JSON.stringify(items),
         shipping_address_id: shipping_address_id || '',
         shipping_cost: shipping_cost.toString(),
