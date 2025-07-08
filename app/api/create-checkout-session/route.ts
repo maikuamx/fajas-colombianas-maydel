@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const { items, total, shipping_address_id, shipping_cost } = await request.json();
+    const { items, total, shipping_address_id, shipping_cost, billing_data, tax_amount } = await request.json();
 
     // Create Stripe checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -45,6 +45,18 @@ export async function POST(request: NextRequest) {
             unit_amount: Math.round(shipping_cost * 100),
           },
           quantity: 1,
+        }] : []),
+        // Tax as a separate line item (if billing is required)
+        ...(tax_amount > 0 ? [{
+          price_data: {
+            currency: 'mxn',
+            product_data: {
+              name: 'IVA (16%)',
+              description: 'Impuesto al Valor Agregado',
+            },
+            unit_amount: Math.round(tax_amount * 100),
+          },
+          quantity: 1,
         }] : [])
       ],
       mode: 'payment',
@@ -55,6 +67,8 @@ export async function POST(request: NextRequest) {
         items: JSON.stringify(items),
         shipping_address_id: shipping_address_id || '',
         shipping_cost: shipping_cost.toString(),
+        billing_data: billing_data ? JSON.stringify(billing_data) : '',
+        tax_amount: tax_amount ? tax_amount.toString() : '0',
       },
     });
 

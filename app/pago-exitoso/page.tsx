@@ -37,6 +37,8 @@ export default async function PaymentSuccessPage({
       const items = JSON.parse(checkoutSession.metadata?.items || '[]');
       const shippingAddressId = checkoutSession.metadata?.shipping_address_id;
       const shippingCost = parseFloat(checkoutSession.metadata?.shipping_cost || '0');
+      const billingData = checkoutSession.metadata?.billing_data ? JSON.parse(checkoutSession.metadata.billing_data) : null;
+      const taxAmount = parseFloat(checkoutSession.metadata?.tax_amount || '0');
       
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -46,6 +48,7 @@ export default async function PaymentSuccessPage({
           total_amount: checkoutSession.amount_total! / 100, // Convert from cents
           shipping_address_id: shippingAddressId || null,
           shipping_cost: shippingCost,
+          tax_amount: taxAmount,
         }])
         .select()
         .single();
@@ -59,6 +62,7 @@ export default async function PaymentSuccessPage({
       const orderItems = items.map((item: any) => ({
         order_id: order.id,
         product_id: item.product_id,
+        color_id: item.color_id || null,
         quantity: item.quantity,
         unit_price: item.price,
       }));
@@ -69,6 +73,21 @@ export default async function PaymentSuccessPage({
 
       if (itemsError) {
         console.error('Error creating order items:', itemsError);
+      }
+
+      // Create billing info if required
+      if (billingData && billingData.requires_invoice) {
+        const { error: billingError } = await supabase
+          .from('billing_info')
+          .insert([{
+            user_id: session.user.id,
+            order_id: order.id,
+            ...billingData,
+          }]);
+
+        if (billingError) {
+          console.error('Error creating billing info:', billingError);
+        }
       }
 
       // Clear the cart

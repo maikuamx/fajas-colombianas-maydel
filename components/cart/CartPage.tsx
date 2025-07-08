@@ -9,6 +9,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ShippingAddressForm from '../shipping/ShippingAdressForm';
+import BillingForm from '../billing/BillingForm';
 
 interface CartPageProps {
   isAuthenticated: boolean;
@@ -33,6 +34,7 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<ShippingAddress | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
+  const [billingData, setBillingData] = useState<any>(null);
   const supabase = createClientComponentClient();
   const router = useRouter();
 
@@ -52,7 +54,8 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
 
   const subtotal = total;
   const shippingCost = selectedAddress?.shipping_cost || 0;
-  const finalTotal = subtotal + shippingCost;
+  const taxAmount = billingData?.requires_invoice ? subtotal * 0.16 : 0;
+  const finalTotal = subtotal + shippingCost + taxAmount;
 
   const handleCheckout = async () => {
     if (!isAuthenticated) {
@@ -86,6 +89,8 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
           total: finalTotal,
           shipping_address_id: selectedAddress.id,
           shipping_cost: shippingCost,
+          billing_data: billingData,
+          tax_amount: taxAmount,
         }),
       });
 
@@ -254,6 +259,20 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
               />
             </motion.div>
           )}
+
+          {/* Billing Information */}
+          {isAuthenticated && selectedAddress && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <BillingForm
+                onBillingDataChange={setBillingData}
+                shippingAddress={selectedAddress}
+              />
+            </motion.div>
+          )}
         </div>
 
         {/* Order Summary */}
@@ -279,6 +298,13 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
                 </div>
               )}
               
+              {billingData?.requires_invoice && (
+                <div className="flex justify-between">
+                  <span>IVA (16%)</span>
+                  <span>${taxAmount.toFixed(2)}</span>
+                </div>
+              )}
+              
               <div className="border-t pt-4">
                 <div className="flex justify-between text-lg font-semibold">
                   <span>Total</span>
@@ -290,7 +316,7 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
             {isAuthenticated ? (
               <button 
                 onClick={handleCheckout}
-                disabled={isProcessing || !selectedAddress}
+                disabled={isProcessing || !selectedAddress || (billingData?.requires_invoice && (!billingData.rfc || !billingData.razon_social || !billingData.full_name || !billingData.email || !billingData.phone))}
                 className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <CreditCard className="w-5 h-5" />
@@ -307,9 +333,10 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
               </div>
             )}
 
-            {!selectedAddress && isAuthenticated && (
+            {isAuthenticated && (
               <p className="text-xs text-red-600 text-center mt-2">
-                Selecciona una dirección de envío para continuar
+                {!selectedAddress && "Selecciona una dirección de envío para continuar"}
+                {selectedAddress && billingData?.requires_invoice && (!billingData.rfc || !billingData.razon_social || !billingData.full_name || !billingData.email || !billingData.phone) && "Complete todos los campos de facturación"}
               </p>
             )}
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { motion } from 'framer-motion';
-import { Package, User, MapPin, Calendar, DollarSign, Eye, Edit2, Truck } from 'lucide-react';
+import { Package, User, MapPin, Calendar, DollarSign, Eye, Edit2, Truck, Receipt } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Order {
@@ -12,6 +12,7 @@ interface Order {
   status: string;
   total_amount: number;
   shipping_cost: number;
+  tax_amount?: number;
   created_at: string;
   profiles: {
     full_name: string;
@@ -27,15 +28,29 @@ interface Order {
     country: string;
     phone?: string;
   } | null;
+  billing_info: {
+    requires_invoice: boolean;
+    rfc?: string;
+    razon_social?: string;
+    cfdi_uso?: string;
+    full_name?: string;
+    email?: string;
+    phone?: string;
+  }[] | null;
   order_items: Array<{
     id: string;
     quantity: number;
     unit_price: number;
+    color_id?: string;
     products: {
       id: string;
       name: string;
       image_url: string;
     };
+    product_colors?: {
+      color_name: string;
+      color_code: string;
+    } | null;
   }>;
 }
 
@@ -53,10 +68,7 @@ const ORDER_STATUSES = [
 
 export default function AdminOrdersManagement({ orders: initialOrders }: AdminOrdersManagementProps) {
   const [orders, setOrders] = useState(initialOrders);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(
-    initialOrders.length > 0 ? initialOrders[0] : null
-    );
-
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState(false);
   
@@ -293,6 +305,26 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
                 </div>
               </div>
 
+              {/* Billing Info */}
+              {selectedOrder.billing_info && selectedOrder.billing_info.length > 0 && selectedOrder.billing_info[0].requires_invoice && (
+                <div className="mb-6">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Receipt className="w-4 h-4" />
+                    Información de Facturación
+                  </h4>
+                  <div className="text-sm space-y-1 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <p className="font-medium text-yellow-800 mb-2">⚠️ Requiere Factura</p>
+                    <p><span className="font-medium">RFC:</span> {selectedOrder.billing_info[0].rfc}</p>
+                    <p><span className="font-medium">Razón Social:</span> {selectedOrder.billing_info[0].razon_social}</p>
+                    <p><span className="font-medium">CFDI:</span> {selectedOrder.billing_info[0].cfdi_uso}</p>
+                    <p><span className="font-medium">Nombre:</span> {selectedOrder.billing_info[0].full_name}</p>
+                    <p><span className="font-medium">Email:</span> {selectedOrder.billing_info[0].email}</p>
+                    {selectedOrder.billing_info[0].phone && (
+                      <p><span className="font-medium">Teléfono:</span> {selectedOrder.billing_info[0].phone}</p>
+                    )}
+                  </div>
+                </div>
+              )}
               {/* Shipping Address */}
               {selectedOrder.shipping_addresses && (
                 <div className="mb-6">
@@ -339,6 +371,15 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-sm">{item.products.name}</p>
+                          {item.product_colors && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <div
+                                className="w-3 h-3 rounded-full border border-gray-200"
+                                style={{ backgroundColor: item.product_colors.color_code }}
+                              />
+                              <span className="text-xs text-gray-600">Color: {item.product_colors.color_name}</span>
+                            </div>
+                          )}
                           <p className="text-xs text-gray-600">
                             Cantidad: {item.quantity} × ${item.unit_price}
                           </p>
@@ -357,12 +398,18 @@ export default function AdminOrdersManagement({ orders: initialOrders }: AdminOr
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>${((selectedOrder.total_amount || 0) - (selectedOrder.shipping_cost || 0)).toFixed(2)}</span>
+                    <span>${((selectedOrder.total_amount || 0) - (selectedOrder.shipping_cost || 0) - (selectedOrder.tax_amount || 0)).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Envío:</span>
                     <span>${(selectedOrder.shipping_cost || 0).toFixed(2)}</span>
                   </div>
+                  {selectedOrder.tax_amount && selectedOrder.tax_amount > 0 && (
+                    <div className="flex justify-between">
+                      <span>IVA (16%):</span>
+                      <span>${selectedOrder.tax_amount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-semibold text-base border-t pt-2">
                     <span>Total:</span>
                     <span className="text-primary">${(selectedOrder.total_amount || 0).toFixed(2)}</span>

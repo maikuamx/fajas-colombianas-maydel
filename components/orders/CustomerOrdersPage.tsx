@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Package, MapPin, Calendar, DollarSign, Eye, Truck, CheckCircle } from 'lucide-react';
+import { Package, MapPin, Calendar, DollarSign, Eye, Truck, CheckCircle, Receipt } from 'lucide-react';
 
 interface Order {
   id: string;
   status: string;
   total_amount: number;
   shipping_cost: number;
+  tax_amount?: number;
   created_at: string;
   shipping_addresses: {
     name: string;
@@ -20,6 +21,12 @@ interface Order {
     country: string;
     phone?: string;
   } | null;
+  billing_info: {
+    requires_invoice: boolean;
+    rfc?: string;
+    razon_social?: string;
+    cfdi_uso?: string;
+  }[] | null;
   order_items: Array<{
     id: string;
     quantity: number;
@@ -29,6 +36,10 @@ interface Order {
       name: string;
       image_url: string;
     };
+    product_colors?: {
+      color_name: string;
+      color_code: string;
+    } | null;
   }>;
 }
 
@@ -235,6 +246,21 @@ export default function CustomerOrdersPage({ orders }: CustomerOrdersPageProps) 
                 </div>
               </div>
 
+              {/* Billing Info */}
+              {selectedOrder.billing_info && selectedOrder.billing_info.length > 0 && selectedOrder.billing_info[0].requires_invoice && (
+                <div className="mb-6">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Receipt className="w-4 h-4" />
+                    Información de Facturación
+                  </h4>
+                  <div className="text-sm space-y-1 bg-blue-50 p-4 rounded-lg">
+                    <p className="font-medium text-blue-800 mb-2">📄 Factura Solicitada</p>
+                    <p><span className="font-medium">RFC:</span> {selectedOrder.billing_info[0].rfc}</p>
+                    <p><span className="font-medium">Razón Social:</span> {selectedOrder.billing_info[0].razon_social}</p>
+                    <p><span className="font-medium">Uso de CFDI:</span> {selectedOrder.billing_info[0].cfdi_uso}</p>
+                  </div>
+                </div>
+              )}
               {/* Shipping Address */}
               {selectedOrder.shipping_addresses && (
                 <div className="mb-6">
@@ -281,6 +307,15 @@ export default function CustomerOrdersPage({ orders }: CustomerOrdersPageProps) 
                         </div>
                         <div className="flex-1">
                           <p className="font-medium">{item.products.name}</p>
+                          {item.product_colors && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <div
+                                className="w-4 h-4 rounded-full border border-gray-200"
+                                style={{ backgroundColor: item.product_colors.color_code }}
+                              />
+                              <span className="text-sm text-gray-600">Color: {item.product_colors.color_name}</span>
+                            </div>
+                          )}
                           <p className="text-sm text-gray-600">
                             Cantidad: {item.quantity} × ${item.unit_price}
                           </p>
@@ -301,12 +336,18 @@ export default function CustomerOrdersPage({ orders }: CustomerOrdersPageProps) 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>${(selectedOrder.total_amount - selectedOrder.shipping_cost).toFixed(2)}</span>
+                    <span>${(selectedOrder.total_amount - selectedOrder.shipping_cost - (selectedOrder.tax_amount || 0)).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Envío:</span>
                     <span>${selectedOrder.shipping_cost.toFixed(2)}</span>
                   </div>
+                  {selectedOrder.tax_amount && selectedOrder.tax_amount > 0 && (
+                    <div className="flex justify-between">
+                      <span>IVA (16%):</span>
+                      <span>${selectedOrder.tax_amount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-semibold text-base border-t pt-2">
                     <span>Total:</span>
                     <span className="text-primary">${selectedOrder.total_amount.toFixed(2)}</span>
