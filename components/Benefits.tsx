@@ -12,9 +12,9 @@ const benefits = [
   {
     icon: Truck,
     title: 'Envío Rápido',
-    description: 'Entrega a todo México en 2-3 días hábiles.',
+    description: 'Entrega a todo México en 2-5 días hábiles.',
   },
-
+  
   {
     icon: Heart,
     title: 'Atención Personalizada',

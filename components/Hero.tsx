@@ -8,7 +8,7 @@ import { ArrowRight, MessageCircle } from 'lucide-react';
 export default function Hero() {
   const handleWhatsAppContact = () => {
     const phoneNumber = '5216143716816';
-    const message = encodeURIComponent('¡Hola! Me interesa conocer más sobre las fajas Maydel. ¿Podrían ayudarme?');
+    const message = encodeURIComponent('¡Hola! Me interesa saber más sobre las fajas colombianas Maydel. ¿Podrían ayudarme?');
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -40,7 +40,7 @@ export default function Hero() {
                 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight"
               >
                 Realza tu belleza con{' '}
-                <span className="text-primary">Maydel Fajas</span>
+                <span className="text-primary">fajas Maydel</span>
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
