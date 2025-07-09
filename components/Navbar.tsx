@@ -62,8 +62,6 @@ export default function Navbar() {
   const menuItems = [
     { href: "/", label: "Inicio" },
     { href: "/productos", label: "Productos" },
-    { href: "/nosotros", label: "Nosotros" },
-    { href: "/contacto", label: "Contacto" },
   ]
 
   const handleMenuToggle = () => {

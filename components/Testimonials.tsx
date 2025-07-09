@@ -92,9 +92,6 @@ export default function Testimonials() {
           viewport={{ once: true }}
           className="text-center mt-12"
         >
-          <Link href="/testimonios" className="btn-secondary">
-            Ver Más Testimonios
-          </Link>
         </motion.div>
       </div>
     </section>

@@ -73,7 +73,7 @@ export default function Footer() {
             <h3 className="font-semibold text-lg mb-4">Síguenos</h3>
             <div className="flex space-x-4">
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/share/1FgHBL9htm/?mibextid=wwXIfr"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow"
@@ -81,7 +81,7 @@ export default function Footer() {
                 <Facebook className="w-5 h-5 text-primary" />
               </a>
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/fajas_maydel?igsh=MXAwbWd1bzBrYjNraQ=="
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow"
