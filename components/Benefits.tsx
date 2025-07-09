@@ -14,11 +14,7 @@ const benefits = [
     title: 'Envío Rápido',
     description: 'Entrega a todo México en 2-3 días hábiles.',
   },
-  {
-    icon: RefreshCw,
-    title: 'Devolución Sencilla',
-    description: '30 días para cambios y devoluciones sin complicaciones.',
-  },
+
   {
     icon: Heart,
     title: 'Atención Personalizada',
