@@ -54,7 +54,12 @@ export default function Footer() {
             <ul className="space-y-4">
               <li className="flex items-center space-x-3 text-gray-600">
                 <MapPin className="w-5 h-5 text-primary" />
-                <span>Chihuahua, Chihuahua, México</span>
+                <div>
+                  <div>Ignacio Rodríguez #113</div>
+                  <div>Col. Diego Lucero</div>
+                  <div>CP 31123</div>
+                  <div>Chihuahua, Chihuahua</div>
+                </div>
               </li>
               <li className="flex items-center space-x-3 text-gray-600">
                 <Phone className="w-5 h-5 text-primary" />
