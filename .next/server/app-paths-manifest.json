@@ -1,7 +1,5 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js",
-  "/auth/page": "app/auth/page.js",
-  "/productos/page": "app/productos/page.js",
-  "/carrito/page": "app/carrito/page.js",
-  "/perfil/page": "app/perfil/page.js"
+  "/admin/page": "app/admin/page.js"
 }

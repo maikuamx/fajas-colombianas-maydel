@@ -1,4 +1,4 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import ProductCatalog from '../../components/products/ProductCatalog';
 
@@ -11,7 +11,8 @@ export default async function ProductsPage() {
     .from('products')
     .select(`
       *,
-      product_colors (*)
+      product_colors (*),
+      product_sizes (*)
     `);
 
   return (

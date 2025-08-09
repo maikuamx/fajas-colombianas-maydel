@@ -1,6 +1,7 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import AuthForm from '../../components/auth/AuthForm';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,9 @@ export default async function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary/30">
       <div className="w-full max-w-md">
-        <AuthForm />
+        <Suspense fallback={<div>Cargando...</div>}>
+          <AuthForm />
+        </Suspense>
       </div>
     </div>
   );

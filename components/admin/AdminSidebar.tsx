@@ -15,7 +15,7 @@ export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="w-full md:w-56 bg-white md:border-r md:border-gray-200 md:h-screen">
+    <div className="w-full md:w-56 bg-white md:border-r md:border-gray-200 md:sticky md:top-0 md:h-screen">
       <div className="p-4 md:p-6 md:block hidden">
         <h2 className="text-xl font-bold text-gray-800">Admin Panel</h2>
       </div>

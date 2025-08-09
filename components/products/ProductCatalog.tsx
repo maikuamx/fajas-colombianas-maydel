@@ -29,13 +29,6 @@ interface ProductCatalogProps {
 
 const ITEMS_PER_PAGE = 16;
 
-const CATEGORIES = [
-  { id: 'ropa', label: 'Ropa' },
-  { id: 'zapatos', label: 'Zapatos' },
-  { id: 'accesorios', label: 'Accesorios' },
-  { id: 'otros', label: 'Otros' },
-];
-
 export default function ProductCatalog({ products }: ProductCatalogProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -102,6 +95,18 @@ export default function ProductCatalog({ products }: ProductCatalogProps) {
     return imageUrl;
   };
 
+  // Get unique categories from products
+  const categories = useMemo(() => {
+    const allCategories = products.flatMap(p => 
+      p.product_categories?.map(pc => pc.categories) || []
+    ).filter(Boolean);
+    
+    // Remove duplicates by id
+    return Array.from(
+      new Map(allCategories.map(cat => [cat.id, cat]))
+    ).map(([_, cat]) => cat);
+  }, [products]);
+
   // Get unique sizes from products
   const sizes = useMemo(() => {
     const allSizes = products.map(p => p.size);
@@ -123,7 +128,10 @@ export default function ProductCatalog({ products }: ProductCatalogProps) {
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
-      const matchesCategory = !selectedCategory || product.category === selectedCategory;
+      const matchesCategory = !selectedCategory || 
+        product.product_categories?.some(pc => 
+          pc.categories?.id === selectedCategory
+        );
       const matchesSize = !selectedSize || product.size === selectedSize;
       const matchesColor = !selectedColor || product.product_colors.some(c => c.color_name === selectedColor);
       const matchesSearch = !query || 
@@ -145,9 +153,9 @@ export default function ProductCatalog({ products }: ProductCatalogProps) {
   };
 
   const filteredCategories = categoryQuery === ''
-    ? CATEGORIES
-    : CATEGORIES.filter((category) =>
-        category.label
+    ? categories
+    : categories.filter((category) =>
+        category.name
           .toLowerCase()
           .includes(categoryQuery.toLowerCase())
       );
@@ -194,7 +202,7 @@ export default function ProductCatalog({ products }: ProductCatalogProps) {
                     <Combobox.Input
                       className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
                       displayValue={(category: string) => 
-                        CATEGORIES.find(c => c.id === category)?.label || ''
+                        categories.find(c => c.id === category)?.name || ''
                       }
                       onChange={(event) => setCategoryQuery(event.target.value)}
                       placeholder="Seleccionar categoría"
@@ -236,7 +244,7 @@ export default function ProductCatalog({ products }: ProductCatalogProps) {
                                     selected ? 'font-medium' : 'font-normal'
                                   }`}
                                 >
-                                  {category.label}
+                                  {category.name}
                                 </span>
                                 {selected ? (
                                   <span

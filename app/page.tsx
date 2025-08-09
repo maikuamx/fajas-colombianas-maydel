@@ -19,7 +19,11 @@ export default async function Home() {
       .from('products')
       .select(`
         *,
-        product_colors (*)
+        product_colors (*),
+        product_sizes (*),
+        product_categories (
+          categories (*)
+        )
       `)
       .limit(6)
   ]);

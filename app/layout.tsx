@@ -48,7 +48,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user || null;
 
   let userRole = null;
   if (user) {
@@ -67,7 +68,7 @@ export default async function RootLayout({
         <script src="https://upload-widget.cloudinary.com/global/all.js" async />
       </head>
       <body className="min-h-screen bg-white flex flex-col">
-        <SessionProvider>
+        <SessionProvider initialSession={session}>
           <CartProvider initialUser={user}>
             <Navbar />
             <main className="flex-grow pt-20">

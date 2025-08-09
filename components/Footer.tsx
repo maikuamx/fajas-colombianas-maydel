@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Facebook, Instagram, Mail, MapPin, Phone } from 'lucide-react';
+import TikTokIcon from './icons/TikTokIcon';
 
 export default function Footer() {
   return (
@@ -70,7 +71,7 @@ export default function Footer() {
 
           {/* Social Media */}
           <div>
-            <h3 className="font-semibold text-lg mb-4">Síguenos</h3>
+            <h3 className="font-semibold text-lg mb-4">Síguenos en nuestras redes</h3>
             <div className="flex space-x-4">
               <a
                 href="https://www.facebook.com/share/1FgHBL9htm/?mibextid=wwXIfr"
@@ -81,12 +82,20 @@ export default function Footer() {
                 <Facebook className="w-5 h-5 text-primary" />
               </a>
               <a
-                href="https://www.instagram.com/fajas_maydel?igsh=MXAwbWd1bzBrYjNraQ=="
+                href="https://www.instagram.com/fajas_maydel?utm_source=ig_web_button_share_sheet&igsh=MWptOTltb2hyaWU1Yw=="
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow"
               >
                 <Instagram className="w-5 h-5 text-primary" />
+              </a>
+              <a
+                href="https://www.tiktok.com/@fajascolombianas_maydel?_t=ZS-8yih5UUUJFp&_r=1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-shadow"
+              >
+                <TikTokIcon className="w-5 h-5 text-primary" />
               </a>
             </div>
           </div>

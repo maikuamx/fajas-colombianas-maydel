@@ -10,36 +10,21 @@ export function useSession() {
   return useContext(SessionContext)
 }
 
-export default function SessionProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
+interface SessionProviderProps {
+  children: React.ReactNode;
+  initialSession?: Session | null;
+}
+
+export default function SessionProvider({ children, initialSession = null }: SessionProviderProps) {
+  const [session, setSession] = useState<Session | null>(initialSession)
   const [isLoading, setIsLoading] = useState(true)
   const supabase = createClientComponentClient()
 
   useEffect(() => {
     let mounted = true
 
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        const { data: { user }, error } = await supabase.auth.getUser()
-        if (error) {
-          console.error('Error getting session:', error)
-        }
-        if (mounted) {
-          // Convert user to session format for compatibility
-          setSession(user ? { user } as Session : null)
-          setIsLoading(false)
-        }
-      } catch (error) {
-        console.error('Error in getInitialSession:', error)
-        if (mounted) {
-          setSession(null)
-          setIsLoading(false)
-        }
-      }
-    }
-
-    getInitialSession()
+    // Set loading to false since we have initial session from server
+    setIsLoading(false)
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

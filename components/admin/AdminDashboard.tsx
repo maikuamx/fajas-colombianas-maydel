@@ -10,21 +10,27 @@ interface DashboardProps {
   products: any[];
   orders: any[];
   profiles: any[];
+  categories: any[];
 }
 
-const CATEGORIES = [
-  { id: 'ropa', label: 'Ropa' },
-  { id: 'zapatos', label: 'Zapatos' },
-  { id: 'accesorios', label: 'Accesorios' },
-  { id: 'otros', label: 'Otros' },
-];
+const SIZE_OPTIONS = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL'];
 
 interface ColorVariant {
   color_name: string;
   color_code: string;
 }
 
-export default function AdminDashboard({ products: initialProducts, orders, profiles }: DashboardProps) {
+interface SizeOption {
+  size: string;
+  selected: boolean;
+}
+
+interface CategoryOption {
+  id: string;
+  selected: boolean;
+}
+
+export default function AdminDashboard({ products: initialProducts, orders, profiles, categories }: DashboardProps) {
   const [products, setProducts] = useState(initialProducts);
   const [isUploading, setIsUploading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -35,10 +41,11 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
     name: '',
     description: '',
     prince: '',
-    category: '',
-    size: '',
+    brand: '',
     image_url: [] as string[],
     colors: [] as ColorVariant[],
+    sizes: SIZE_OPTIONS.map(size => ({ size, selected: false })) as SizeOption[],
+    categories: categories.map(cat => ({ id: cat.id, selected: false })) as CategoryOption[],
   });
   const [error, setError] = useState('');
   
@@ -182,20 +189,32 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
   const handleEdit = async (product: any) => {
     const imageUrls = parseImageUrls(product.image_url);
     
-    const { data: colors } = await supabase
-      .from('product_colors')
-      .select('*')
-      .eq('product_id', product.id);
+    const [
+      { data: colors },
+      { data: sizes },
+      { data: productCategories }
+    ] = await Promise.all([
+      supabase.from('product_colors').select('*').eq('product_id', product.id),
+      supabase.from('product_sizes').select('*').eq('product_id', product.id),
+      supabase.from('product_categories').select('category_id').eq('product_id', product.id)
+    ]);
+
+    const selectedSizes = sizes?.map(s => s.size) || [];
+    const selectedCategoryIds = productCategories?.map(pc => pc.category_id) || [];
 
     setEditingProduct(product);
     setFormData({
       name: product.name,
       description: product.description,
       prince: product.prince.toString(),
-      category: product.category,
-      size: product.size || '',
+      brand: product.brand || '',
       image_url: imageUrls,
       colors: colors || [],
+      sizes: SIZE_OPTIONS.map(size => ({
+        size,
+        selected: selectedSizes.includes(size)
+      })),
+      categories: categories.map(cat => ({ id: cat.id, selected: selectedCategoryIds.includes(cat.id) })),
     });
     setShowForm(true);
   };
@@ -227,10 +246,11 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
         name: formData.name,
         description: formData.description,
         prince: parseFloat(formData.prince),
-        category: formData.category,
-        size: formData.size,
+        brand: formData.brand,
         image_url: JSON.stringify(formData.image_url),
       };
+      
+      const selectedCategories = formData.categories.filter(c => c.selected);
       
       if (editingProduct) {
         const { data: updatedProduct, error: productError } = await supabase
@@ -242,21 +262,58 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
 
         if (productError) throw productError;
 
-        await supabase
-          .from('product_colors')
-          .delete()
-          .eq('product_id', editingProduct.id);
+        // Delete existing colors, sizes, and categories
+        await Promise.all([
+          supabase.from('product_colors').delete().eq('product_id', editingProduct.id),
+          supabase.from('product_sizes').delete().eq('product_id', editingProduct.id),
+          supabase.from('product_categories').delete().eq('product_id', editingProduct.id)
+        ]);
 
-        const { error: colorsError } = await supabase
-          .from('product_colors')
-          .insert(
-            formData.colors.map(color => ({
-              product_id: editingProduct.id,
-              ...color,
-            }))
+        // Insert new colors, sizes, and categories
+        const selectedSizes = formData.sizes.filter(s => s.selected).map(s => s.size);
+        
+        const insertPromises = [];
+        
+        if (formData.colors.length > 0) {
+          insertPromises.push(
+            supabase.from('product_colors').insert(
+              formData.colors.map(color => ({
+                product_id: editingProduct.id,
+                ...color,
+              }))
+            )
           );
-
-        if (colorsError) throw colorsError;
+        }
+        
+        if (selectedSizes.length > 0) {
+          insertPromises.push(
+            supabase.from('product_sizes').insert(
+              selectedSizes.map(size => ({
+                product_id: editingProduct.id,
+                size,
+              }))
+            )
+          );
+        }
+        
+        if (selectedCategories.length > 0) {
+          insertPromises.push(
+            supabase.from('product_categories').insert(
+              selectedCategories.map(category => ({
+                product_id: editingProduct.id,
+                category_id: category.id,
+              }))
+            )
+          );
+        }
+        
+        if (insertPromises.length > 0) {
+          const results = await Promise.all(insertPromises);
+          const errors = results.filter(result => result.error);
+          if (errors.length > 0) {
+            throw errors[0].error;
+          }
+        }
 
         setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
         toast.success('Producto actualizado exitosamente');
@@ -269,16 +326,51 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
 
         if (productError) throw productError;
 
-        const { error: colorsError } = await supabase
-          .from('product_colors')
-          .insert(
-            formData.colors.map(color => ({
-              product_id: newProduct.id,
-              ...color,
-            }))
+        // Insert colors, sizes, and categories for new product
+        const selectedSizes = formData.sizes.filter(s => s.selected).map(s => s.size);
+        
+        const insertPromises = [];
+        
+        if (formData.colors.length > 0) {
+          insertPromises.push(
+            supabase.from('product_colors').insert(
+              formData.colors.map(color => ({
+                product_id: newProduct.id,
+                ...color,
+              }))
+            )
           );
-
-        if (colorsError) throw colorsError;
+        }
+        
+        if (selectedSizes.length > 0) {
+          insertPromises.push(
+            supabase.from('product_sizes').insert(
+              selectedSizes.map(size => ({
+                product_id: newProduct.id,
+                size,
+              }))
+            )
+          );
+        }
+        
+        if (selectedCategories.length > 0) {
+          insertPromises.push(
+            supabase.from('product_categories').insert(
+              selectedCategories.map(category => ({
+                product_id: newProduct.id,
+                category_id: category.id,
+              }))
+            )
+          );
+        }
+        
+        if (insertPromises.length > 0) {
+          const results = await Promise.all(insertPromises);
+          const errors = results.filter(result => result.error);
+          if (errors.length > 0) {
+            throw errors[0].error;
+          }
+        }
 
         setProducts(prev => [...prev, newProduct]);
         toast.success('Producto agregado exitosamente');
@@ -288,10 +380,11 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
         name: '',
         description: '',
         prince: '',
-        category: '',
-        size: '',
+        brand: '',
         image_url: [],
         colors: [],
+        sizes: SIZE_OPTIONS.map(size => ({ size, selected: false })),
+        categories: categories.map(cat => ({ id: cat.id, selected: false })),
       });
       setShowForm(false);
       setEditingProduct(null);
@@ -302,7 +395,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
   };
 
   return (
-    <div className="space-y-8 px-4 md:px-0">
+    <div className="space-y-8">
       {/* Stats Grid - Responsive layout */}
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
@@ -360,10 +453,11 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                   name: '',
                   description: '',
                   prince: '',
-                  category: '',
-                  size: '',
+                  brand: '',
                   image_url: [],
                   colors: [],
+                  sizes: SIZE_OPTIONS.map(size => ({ size, selected: false })),
+                  categories: categories.map(cat => ({ id: cat.id, selected: false })),
                 });
                 setShowForm(true);
               }}
@@ -389,10 +483,11 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                     name: '',
                     description: '',
                     prince: '',
-                    category: '',
-                    size: '',
+                    brand: '',
                     image_url: [],
                     colors: [],
+                    sizes: SIZE_OPTIONS.map(size => ({ size, selected: false })),
+                    categories: categories.map(cat => ({ id: cat.id, selected: false })),
                   });
                 }}
                 className="text-gray-500 hover:text-gray-700"
@@ -432,34 +527,93 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
 
                 <div className="col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Categoría
+                    Marca
                   </label>
-                  <select
-                    value={formData.category}
-                    onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                  <input
+                    type="text"
+                    value={formData.brand}
+                    onChange={e => setFormData(prev => ({ ...prev, brand: e.target.value }))}
                     className="input-field"
-                    required
-                  >
-                    <option value="">Seleccionar categoría</option>
-                    {CATEGORIES.map(category => (
-                      <option key={category.id} value={category.id}>
-                        {category.label}
-                      </option>
-                    ))}
-                  </select>
+                    placeholder="Ej: Nike, Adidas, etc."
+                  />
                 </div>
 
                 <div className="col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Talla
+                    Categorías
                   </label>
-                  <input
-                    type="text"
-                    value={formData.size}
-                    onChange={e => setFormData(prev => ({ ...prev, size: e.target.value }))}
-                    className="input-field"
-                    placeholder="Ej: S, M, L, XL, 42, etc."
-                  />
+                  <div className="grid grid-cols-2 gap-2 border border-gray-200 rounded-lg p-2 max-h-40 overflow-y-auto">
+                    {categories.map((category) => {
+                      const categoryOption = formData.categories.find(c => c.id === category.id);
+                      return (
+                        <label
+                          key={category.id}
+                          className={`flex items-center justify-center p-2 border rounded-lg cursor-pointer transition-colors ${
+                            categoryOption?.selected
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={categoryOption?.selected || false}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                categories: prev.categories.map(c =>
+                                  c.id === category.id ? { ...c, selected: e.target.checked } : c
+                                )
+                              }));
+                            }}
+                            className="sr-only"
+                          />
+                          <span className="text-sm font-medium">{category.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selecciona las categorías para este producto
+                  </p>
+                </div>
+
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tallas Disponibles
+                  </label>
+                  <div className="grid grid-cols-4 gap-2 border border-gray-200 rounded-lg p-2">
+                    {SIZE_OPTIONS.map((size) => {
+                      const sizeOption = formData.sizes.find(s => s.size === size);
+                      return (
+                        <label
+                          key={size}
+                          className={`flex items-center justify-center p-2 border rounded-lg cursor-pointer transition-colors ${
+                            sizeOption?.selected
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={sizeOption?.selected || false}
+                            onChange={(e) => {
+                              setFormData(prev => ({
+                                ...prev,
+                                sizes: prev.sizes.map(s =>
+                                  s.size === size ? { ...s, selected: e.target.checked } : s
+                                )
+                              }));
+                            }}
+                            className="sr-only"
+                          />
+                          <span className="text-sm font-medium">{size}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selecciona las tallas disponibles para este producto
+                  </p>
                 </div>
 
                 <div className="col-span-1">
@@ -571,10 +725,11 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                       name: '',
                       description: '',
                       prince: '',
-                      category: '',
-                      size: '',
+                      brand: '',
                       image_url: [],
                       colors: [],
+                      sizes: SIZE_OPTIONS.map(size => ({ size, selected: false })),
+                      categories: categories.map(cat => ({ id: cat.id, selected: false })),
                     });
                   }}
                   className="btn-secondary w-full"
@@ -584,7 +739,7 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                 <button
                   type="submit"
                   className="btn-primary w-full"
-                  disabled={isUploading || formData.image_url.length === 0 || formData.colors.length === 0}
+                  disabled={isUploading || formData.image_url.length === 0 || formData.categories.filter(c => c.selected).length === 0}
                 >
                   {editingProduct ? 'Actualizar Producto' : 'Agregar Producto'}
                 </button>
@@ -628,13 +783,26 @@ export default function AdminDashboard({ products: initialProducts, orders, prof
                     <span className="text-primary font-semibold">
                       ${product.prince}
                     </span>
+                    {product.brand && (
+                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                        {product.brand}
+                      </span>
+                    )}
                   </div>
-                  {product.size && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      Talla: {product.size}
-                    </p>
+                  {/* Show available sizes */}
+                  {product.product_sizes && product.product_sizes.length > 0 && (
+                    <div className="flex gap-1 mt-2">
+                      {product.product_sizes.map(size => (
+                        <span
+                          key={size.id}
+                          className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                        >
+                          {size.size}
+                        </span>
+                      ))}
+                    </div>
                   )}
-                  {/* Color variants */}
+                  {/* Show colors if available */}
                   {product.product_colors && product.product_colors.length > 0 && (
                     <div className="flex gap-1 mt-2">
                       {product.product_colors.map(color => (

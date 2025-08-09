@@ -4,17 +4,21 @@ import { useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Mail, Lock, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function AuthForm() {
-  const [isLogin, setIsLogin] = useState(true);
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode');
+  const [isLogin, setIsLogin] = useState(mode !== 'register');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     full_name: '',
   });
   
@@ -64,6 +68,11 @@ export default function AuthForm() {
       } else {
         console.log('AuthForm: Attempting signup');
         
+        // Check if passwords match
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error('Las contraseñas no coinciden');
+        }
+
         const { error: signUpError, data: authData } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
@@ -98,6 +107,7 @@ export default function AuthForm() {
           setFormData({
             email: formData.email,
             password: '',
+            confirmPassword: '',
             full_name: '',
           });
         }
@@ -217,6 +227,29 @@ export default function AuthForm() {
                 className="space-y-4"
               >
                 <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirmar Contraseña
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      id="confirmPassword"
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                      className="input-field pl-10"
+                      required
+                      disabled={loading}
+                      autoComplete="new-password"
+                      minLength={6}
+                    />
+                  </div>
+                  {!isLogin && formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
+                    <p className="text-sm text-red-500 mt-1">Las contraseñas no coinciden</p>
+                  )}
+                </div>
+
+                <div>
                   <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1">
                     Nombre Completo
                   </label>
@@ -276,6 +309,7 @@ export default function AuthForm() {
                 setFormData({
                   email: '',
                   password: '',
+                  confirmPassword: '',
                   full_name: '',
                 });
               }}

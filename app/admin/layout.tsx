@@ -32,7 +32,7 @@ export default async function AdminLayout({
       <div className="hidden md:block w-56 flex-shrink-0">
         <AdminSidebar />
       </div>
-      <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-20 md:pb-8">
+      <main className="flex-1 p-4 md:p-8 pb-20 md:pb-8">
         {children}
       </main>
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">

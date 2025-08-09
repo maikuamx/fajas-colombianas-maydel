@@ -12,7 +12,11 @@ export default async function ProductPage({ params }: { params: { id: string } }
     .from('products')
     .select(`
       *,
-      product_colors (*)
+      product_colors (*),
+      product_sizes (*),
+      product_categories (
+        categories (*)
+      )
     `)
     .eq('id', params.id)
     .single();

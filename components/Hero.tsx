@@ -37,10 +37,10 @@ export default function Hero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight"
+                className="text-4xl md:text-5xl lg:text-5xl font-bold text-gray-900 leading-tight"
               >
-                Realza tu belleza con{' '}
-                <span className="text-primary">fajas Maydel</span>
+               Fajas colombianas Maydel{' '}
+                <span className="text-primary italic text-3xl">Always aesthetic</span>
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -76,7 +76,12 @@ export default function Hero() {
                 onClick={handleWhatsAppContact}
                 className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
               >
-                <MessageCircle className="w-5 h-5" />
+                <Image
+                src="/whatsapp-svgrepo-white.svg"
+                alt="whatsapp-logo"
+                width={20}
+                height={20}
+                />
                 Contactar por WhatsApp
               </button>
             </motion.div>
@@ -129,20 +134,32 @@ export default function Hero() {
               transition={{ delay: 0.8 }}
               className="absolute bottom-8 left-8 right-8 bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-lg"
             >
-              <div className="flex items-center gap-4">
-                <div className="flex -space-x-2">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="w-8 h-8 rounded-full border-2 border-white bg-primary/20"
-                    />
-                  ))}
+              <button
+                onClick={() => window.open('https://chat.whatsapp.com/KJ3Vxo8d2VM19XLK64HUHM', '_blank')}
+                className='w-full flex items-center gap-4 text-left hover:bg-white/50 rounded-lg p-2 -m-2 transition-colors duration-200 group'
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                    <Image
+                    src="/whatsapp-svgrepo-com.svg"
+                    alt="Whatsapp Logo"
+                    width={33}
+                    height={33}
+                  />
+                  </div>
+                  <Image
+                    src="/logo.png"
+                    alt="Maydel Logo"
+                    width={40}
+                    height={40}
+                    className="rounded-full"
+                  />
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900">Clientes felices</p>
-                  <p className="text-sm text-gray-600">Únete a nuestra comunidad</p>
+                <div className="flex-1">
+                  <p className='font-medium text-gray-900 group-hover:text-primary transition-colors'>Clientes felices</p>
+                  <p className='text-sm text-gray-600 group-hover:text-primary/80 transition-colors'>Únete a nuestra comunidad</p>
                 </div>
-              </div>
+              </button>
             </motion.div>
           </motion.div>
         </div>

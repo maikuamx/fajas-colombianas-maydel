@@ -10,11 +10,20 @@ export default async function AdminPage() {
   const [
     { data: products },
     { data: orders },
-    { data: profiles }
+    { data: profiles },
+    { data: categories }
   ] = await Promise.all([
-    supabase.from('products').select('*'),
+    supabase.from('products').select(`
+      *,
+      product_colors (*),
+      product_sizes (*),
+      product_categories (
+        categories (*)
+      )
+    `),
     supabase.from('orders').select('*'),
-    supabase.from('profiles').select('*')
+    supabase.from('profiles').select('*'),
+    supabase.from('categories').select('*').order('name')
   ]);
 
   return (
@@ -22,6 +31,7 @@ export default async function AdminPage() {
       products={products || []}
       orders={orders || []}
       profiles={profiles || []}
+      categories={categories || []}
     />
   );
 }
