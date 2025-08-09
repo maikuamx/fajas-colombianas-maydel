@@ -16,6 +16,13 @@ interface Product {
   category: string;
   size: string;
   image_url: string;
+  product_categories?: Array<{
+    categories: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+  }>;
   product_colors: Array<{
     id: string;
     color_name: string;
