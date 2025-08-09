@@ -24,6 +24,7 @@ interface BillingData {
 interface BillingFormProps {
   onBillingDataChange: (data: BillingData) => void;
   shippingAddress?: any;
+  isPickup?: boolean;
 }
 
 const CFDI_OPTIONS = [
@@ -51,7 +52,7 @@ const CFDI_OPTIONS = [
   { value: 'P01', label: 'P01 - Por definir' },
 ];
 
-export default function BillingForm({ onBillingDataChange, shippingAddress }: BillingFormProps) {
+export default function BillingForm({ onBillingDataChange, shippingAddress, isPickup = false }: BillingFormProps) {
   const [billingData, setBillingData] = useState<BillingData>({
     requires_invoice: false,
     rfc: '',
@@ -94,6 +95,15 @@ export default function BillingForm({ onBillingDataChange, shippingAddress }: Bi
         <Receipt className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold">Información de Facturación</h3>
       </div>
+
+      {isPickup && (
+        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-sm text-yellow-800">
+            ⚠️ <strong>Nota:</strong> Para recoger en tienda no se puede generar factura a la dirección de la tienda. 
+            Si requieres factura, debes proporcionar una dirección de facturación diferente.
+          </p>
+        </div>
+      )}
 
       {/* Require Invoice Toggle */}
       <div className="mb-6">
@@ -236,33 +246,38 @@ export default function BillingForm({ onBillingDataChange, shippingAddress }: Bi
             </div>
 
             {/* Same as Shipping Address */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="same_as_shipping"
-                checked={billingData.same_as_shipping}
-                onChange={(e) => handleChange('same_as_shipping', e.target.checked)}
-                className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-              />
-              <label htmlFor="same_as_shipping" className="ml-2 text-sm text-gray-700">
-                Usar la misma dirección de envío para facturación
-              </label>
-            </div>
+            {!isPickup && (
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="same_as_shipping"
+                  checked={billingData.same_as_shipping}
+                  onChange={(e) => handleChange('same_as_shipping', e.target.checked)}
+                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
+                />
+                <label htmlFor="same_as_shipping" className="ml-2 text-sm text-gray-700">
+                  Usar la misma dirección de envío para facturación
+                </label>
+              </div>
+            )}
 
-            {/* Billing Address (if different from shipping) */}
+            {isPickup && (
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  Como seleccionaste recoger en tienda, debes proporcionar una dirección de facturación.
+                </p>
+              </div>
+            )}
+
+            {/* Billing Address (always show if pickup, or if different from shipping) */}
             <AnimatePresence>
-              {!billingData.same_as_shipping && (
+              {(isPickup || !billingData.same_as_shipping) && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="space-y-4 border-t pt-6"
+                  className="space-y-4"
                 >
-                  <div className="flex items-center gap-2 mb-4">
-                    <MapPin className="w-5 h-5 text-primary" />
-                    <h4 className="font-medium">Dirección de Facturación</h4>
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Dirección *
@@ -279,14 +294,14 @@ export default function BillingForm({ onBillingDataChange, shippingAddress }: Bi
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Dirección 2 (opcional)
+                      Dirección 2 (Opcional)
                     </label>
                     <input
                       type="text"
                       value={billingData.billing_address_line2}
                       onChange={(e) => handleChange('billing_address_line2', e.target.value)}
                       className="input-field"
-                      placeholder="Número interior, colonia, referencias"
+                      placeholder="Número interior, colonia"
                     />
                   </div>
 

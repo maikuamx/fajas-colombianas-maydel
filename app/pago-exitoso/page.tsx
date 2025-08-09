@@ -18,10 +18,6 @@ export default async function PaymentSuccessPage({
   const supabase = createServerComponentClient({ cookies });
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/auth');
-  }
-
   if (!searchParams.session_id) {
     redirect('/carrito');
   }
@@ -39,17 +35,26 @@ export default async function PaymentSuccessPage({
       const shippingCost = parseFloat(checkoutSession.metadata?.shipping_cost || '0');
       const billingData = checkoutSession.metadata?.billing_data ? JSON.parse(checkoutSession.metadata.billing_data) : null;
       const taxAmount = parseFloat(checkoutSession.metadata?.tax_amount || '0');
+      const anonymousShipping = checkoutSession.metadata?.anonymous_shipping ? JSON.parse(checkoutSession.metadata.anonymous_shipping) : null;
+      const anonymousEmail = checkoutSession.metadata?.anonymous_email;
       
+      // Create order data
+      const orderData: any = {
+        status: 'completed',
+        total_amount: checkoutSession.amount_total! / 100, // Convert from cents
+        shipping_address_id: shippingAddressId || null,
+        shipping_cost: shippingCost,
+        tax_amount: taxAmount,
+      };
+
+      // Add user_id only if user is authenticated
+      if (user) {
+        (orderData as any).user_id = user.id;
+      }
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .insert([{
-          user_id: user.id,
-          status: 'completed',
-          total_amount: checkoutSession.amount_total! / 100, // Convert from cents
-          shipping_address_id: shippingAddressId || null,
-          shipping_cost: shippingCost,
-          tax_amount: taxAmount,
-        }])
+        .insert([orderData])
         .select()
         .single();
 
@@ -77,13 +82,19 @@ export default async function PaymentSuccessPage({
 
       // Create billing info if required
       if (billingData && billingData.requires_invoice) {
+        const billingInsertData = {
+          order_id: order.id,
+          ...billingData,
+        };
+
+        // Add user_id only if user is authenticated
+        if (user) {
+          billingInsertData.user_id = user.id;
+        }
+
         const { error: billingError } = await supabase
           .from('billing_info')
-          .insert([{
-            user_id: user.id,
-            order_id: order.id,
-            ...billingData,
-          }]);
+          .insert([billingInsertData]);
 
         if (billingError) {
           console.error('Error creating billing info:', billingError);
@@ -91,20 +102,35 @@ export default async function PaymentSuccessPage({
       }
 
       // Clear the cart
-      const { data: cart } = await supabase
-        .from('carts')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
+      if (user) {
+        const { data: cart } = await supabase
+          .from('carts')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
 
-      if (cart) {
-        await supabase
-          .from('cart_items')
-          .delete()
-          .eq('cart_id', cart.id);
+        if (cart) {
+          await supabase
+            .from('cart_items')
+            .delete()
+            .eq('cart_id', cart.id);
+        }
       }
 
-      return <PaymentSuccess orderId={order.id} />;
+      // Pass email data to client component
+      const emailData = anonymousEmail ? {
+        email: anonymousEmail,
+        orderNumber: order.id.slice(0, 8),
+        items: items,
+        total: checkoutSession.amount_total! / 100,
+        shippingCost: shippingCost,
+        taxAmount: taxAmount,
+        shippingAddress: anonymousShipping,
+        billingData: billingData,
+        isPickup: checkoutSession.metadata?.is_pickup === 'true'
+      } : null;
+
+      return <PaymentSuccess orderId={order.id} emailData={emailData} />;
     } else {
       redirect('/carrito');
     }

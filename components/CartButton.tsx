@@ -70,11 +70,6 @@ export default function CartButton({
   }, [supabase]);
 
   const handleAddToCart = async (colorId?: string, sizeId?: string, qty?: number) => {
-    if (!isAuthenticated) {
-      router.push('/auth');
-      return;
-    }
-
     if (userRole === 'admin') {
       return;
     }
@@ -101,11 +96,6 @@ export default function CartButton({
   };
 
   const handleButtonClick = () => {
-    if (!isAuthenticated) {
-      router.push('/auth');
-      return;
-    }
-
     if (userRole === 'admin') {
       return;
     }

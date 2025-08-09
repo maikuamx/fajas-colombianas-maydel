@@ -93,7 +93,7 @@ export default function Navbar() {
 
   const handleWhatsAppContact = () => {
     const phoneNumber = '5216143716816' // Same number as in Hero
-    const message = encodeURIComponent('¡Hola! Me interesa información sobre cambio de talla. ¿Podrían ayudarme con los requerimientos?')
+    const message = encodeURIComponent('¡Hola! Me interesa información sobre cambio de talla para mi compra. ¿Podrían ayudarme con los requerimientos?')
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`
     window.open(whatsappUrl, '_blank')
     setShowSizeChangeModal(false)
@@ -167,28 +167,44 @@ export default function Navbar() {
                           Mis Pedidos
                         </span>
                       </Link>
-                      <Link
-                        href="/carrito"
-                        onClick={handleCartClick}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors relative group"
-                        title="Carrito"
-                      >
-                        <ShoppingBag className="w-6 h-6" />
-                        {itemCount > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                            {itemCount > 99 ? "99+" : itemCount}
-                          </span>
-                        )}
-                        <span className="absolute top-full left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          Carrito ({itemCount})
-                        </span>
-                      </Link>
                     </>
                   )}
+                  <Link
+                    href="/carrito"
+                    onClick={handleCartClick}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors relative group"
+                    title="Carrito"
+                  >
+                    <ShoppingBag className="w-6 h-6" />
+                    {itemCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {itemCount > 99 ? "99+" : itemCount}
+                      </span>
+                    )}
+                    <span className="absolute top-full left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      Carrito ({itemCount})
+                    </span>
+                  </Link>
                   <UserMenu role={userRole} />
                 </>
               ) : (
                 <div className="flex items-center space-x-3">
+                  <Link
+                    href="/carrito"
+                    onClick={handleCartClick}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors relative group"
+                    title="Carrito"
+                  >
+                    <ShoppingBag className="w-6 h-6" />
+                    {itemCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {itemCount > 99 ? "99+" : itemCount}
+                      </span>
+                    )}
+                    <span className="absolute top-full left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      Carrito ({itemCount})
+                    </span>
+                  </Link>
                   <Link href="/auth" className="flex items-center space-x-2 btn-secondary">
                     <LogIn className="w-4 h-4" />
                     <span>Iniciar Sesión</span>
@@ -256,21 +272,21 @@ export default function Navbar() {
                               <Package className="w-5 h-5" />
                               <span>Mis Pedidos</span>
                             </Link>
-                            <Link
-                              href="/carrito"
-                              className="flex items-center space-x-2 text-gray-600 py-2"
-                              onClick={handleMenuClose}
-                            >
-                              <ShoppingBag className="w-5 h-5" />
-                              <span>Carrito</span>
-                              {itemCount > 0 && (
-                                <span className="ml-auto bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                                  {itemCount > 99 ? "99+" : itemCount}
-                                </span>
-                              )}
-                            </Link>
                           </>
                         )}
+                        <Link
+                          href="/carrito"
+                          className="flex items-center space-x-2 text-gray-600 py-2"
+                          onClick={handleMenuClose}
+                        >
+                          <ShoppingBag className="w-5 h-5" />
+                          <span>Carrito</span>
+                          {itemCount > 0 && (
+                            <span className="ml-auto bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                              {itemCount > 99 ? "99+" : itemCount}
+                            </span>
+                          )}
+                        </Link>
                         <Link
                           href={userRole === "admin" ? "/admin" : "/perfil"}
                           className="text-gray-600 hover:text-primary transition-colors py-2"
@@ -284,6 +300,19 @@ export default function Navbar() {
                       </div>
                     ) : (
                       <div className="space-y-3">
+                        <Link
+                          href="/carrito"
+                          className="flex items-center justify-center space-x-2 btn-secondary w-full"
+                          onClick={handleMenuClose}
+                        >
+                          <ShoppingBag className="w-5 h-5" />
+                          <span>Carrito</span>
+                          {itemCount > 0 && (
+                            <span className="ml-2 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                              {itemCount > 99 ? "99+" : itemCount}
+                            </span>
+                          )}
+                        </Link>
                         <Link
                           href="/auth"
                           className="flex items-center justify-center space-x-2 btn-secondary w-full"
@@ -325,7 +354,7 @@ export default function Navbar() {
           >
             <h3 className="text-lg font-semibold mb-4">Cambio de Talla</h3>
             <p className="text-gray-600 mb-6">
-             Para tu cambio de faja, esta tiene que estar en excelentes condiciones (No rasguños, manchada o rota), En su empaque original y con sus etiquetas (Los gastos de envío corren por tu cuenta)
+              Contactame por whatsapp para poder ver los requerimientos en caso de requerir cambio de talla para tu compra
             </p>
             <div className="flex gap-4">
               <button
@@ -344,7 +373,7 @@ export default function Navbar() {
                   width={20}
                   height={20}
                 />
-               Confirmar cambio
+                Contactar por WhatsApp
               </button>
             </div>
           </motion.div>

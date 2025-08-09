@@ -1,6 +1,7 @@
 {
-  "/auth/page": "app/auth/page.js",
-  "/page": "app/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/admin/categorias/page": "app/admin/categorias/page.js"
+  "/_not-found/page": "app/_not-found/page.js",
+  "/productos/page": "app/productos/page.js",
+  "/carrito/page": "app/carrito/page.js",
+  "/api/create-checkout-session/route": "app/api/create-checkout-session/route.js",
+  "/pago-exitoso/page": "app/pago-exitoso/page.js"
 }

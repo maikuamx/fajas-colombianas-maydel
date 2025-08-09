@@ -468,6 +468,7 @@ export default function ProductCatalog({ products }: ProductCatalogProps) {
                       <CartButton
                         productId={product.id}
                         productColors={product.product_colors}
+                        productSizes={[]}
                         userRole={userRole}
                         isAuthenticated={isAuthenticated}
                       />

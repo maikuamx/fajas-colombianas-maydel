@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Minus, Plus, Trash2, ArrowRight, CreditCard } from 'lucide-react';
+import { ShoppingBag, Minus, Plus, Trash2, ArrowRight, CreditCard, MapPin, Store } from 'lucide-react';
 import Link from 'next/link';
 import { useCart } from '../../lib/cart-context';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -12,7 +12,7 @@ import ShippingAddressForm from '../shipping/ShippingAdressForm';
 import BillingForm from '../billing/BillingForm';
 
 interface CartPageProps {
-  isAuthenticated: boolean;
+  isAuthenticated?: boolean;
 }
 
 interface ShippingAddress {
@@ -30,12 +30,29 @@ interface ShippingAddress {
   is_pickup?: boolean;
 }
 
-export default function CartPage({ isAuthenticated }: CartPageProps) {
+interface AnonymousShippingData {
+  name: string;
+  email?: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+  phone?: string;
+  shipping_cost: number;
+}
+
+export default function CartPage({ isAuthenticated = false }: CartPageProps) {
   const { items, total, itemCount, updateQuantity, removeFromCart, clearCart, isLoading } = useCart();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<ShippingAddress | null>(null);
+  const [anonymousShipping, setAnonymousShipping] = useState<AnonymousShippingData | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
+  const [showAnonymousForm, setShowAnonymousForm] = useState(false);
+  const [pickupSelected, setPickupSelected] = useState(false);
   const [billingData, setBillingData] = useState<any>(null);
+  const [anonymousEmail, setAnonymousEmail] = useState('');
   const supabase = createClientComponentClient();
   const router = useRouter();
 
@@ -54,19 +71,25 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
   };
 
   const subtotal = total;
-  const shippingCost = selectedAddress?.shipping_cost || 0;
+  const shippingCost = selectedAddress?.shipping_cost || anonymousShipping?.shipping_cost || 0;
   const taxAmount = billingData?.requires_invoice ? subtotal * 0.16 : 0;
   const finalTotal = subtotal + shippingCost + taxAmount;
 
   const handleCheckout = async () => {
-    if (!isAuthenticated) {
-      router.push('/auth');
+    // Validate shipping information
+    if (!selectedAddress && !anonymousShipping && !pickupSelected) {
+      toast.error('Por favor selecciona una opción de envío o completa los datos de envío');
+      if (!isAuthenticated) {
+        setShowAnonymousForm(true);
+      } else {
+        setShowAddressForm(true);
+      }
       return;
     }
 
-    if (!selectedAddress) {
-      toast.error('Por favor selecciona una opción de envío');
-      setShowAddressForm(true);
+    // Validate email for anonymous users if they want confirmation
+    if (!isAuthenticated && !anonymousEmail) {
+      toast.error('Por favor ingresa tu correo electrónico');
       return;
     }
 
@@ -88,11 +111,13 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
             color_name: item.color?.color_name,
           })),
           total: finalTotal,
-          shipping_address_id: selectedAddress.id !== 'pickup' ? selectedAddress.id : null,
-          shipping_cost: shippingCost,
+          shipping_address_id: selectedAddress && selectedAddress.id !== 'pickup' ? selectedAddress.id : null,
+          shipping_cost: pickupSelected ? 0 : shippingCost,
           billing_data: billingData,
           tax_amount: taxAmount,
-          is_pickup: selectedAddress.is_pickup || false,
+          is_pickup: pickupSelected,
+          anonymous_shipping: !isAuthenticated ? anonymousShipping : null,
+          anonymous_email: !isAuthenticated ? anonymousEmail : null,
         }),
       });
 
@@ -248,7 +273,7 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
           </div>
 
           {/* Shipping Address */}
-          {isAuthenticated && (
+          {isAuthenticated ? (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -256,14 +281,32 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
               className="bg-white rounded-xl shadow-sm border p-6"
             >
               <ShippingAddressForm
-                onAddressSelect={setSelectedAddress}
+                onAddressSelect={(address) => {
+                  setSelectedAddress(address);
+                  setPickupSelected(address.is_pickup || false);
+                }}
                 selectedAddressId={selectedAddress?.id}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-xl shadow-sm border p-6"
+            >
+              <AnonymousShippingForm
+                onShippingDataChange={setAnonymousShipping}
+                onPickupSelect={setPickupSelected}
+                pickupSelected={pickupSelected}
+                anonymousEmail={anonymousEmail}
+                onEmailChange={setAnonymousEmail}
               />
             </motion.div>
           )}
 
           {/* Billing Information */}
-          {isAuthenticated && selectedAddress && (
+          {(selectedAddress || anonymousShipping || pickupSelected) && !pickupSelected && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -271,7 +314,7 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
             >
               <BillingForm
                 onBillingDataChange={setBillingData}
-                shippingAddress={selectedAddress}
+                shippingAddress={selectedAddress || anonymousShipping}
               />
             </motion.div>
           )}
@@ -296,11 +339,25 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
               {selectedAddress && (
                 <div className="flex justify-between">
                   <span>
-                    {selectedAddress.is_pickup ? 'Recoger en tienda' : `Envío a ${selectedAddress.city}`}
+                    {pickupSelected ? 'Recoger en tienda' : `Envío a ${selectedAddress?.city || anonymousShipping?.city}`}
                   </span>
                   <span className={shippingCost === 0 ? 'text-green-600 font-medium' : ''}>
                     {shippingCost === 0 ? 'Gratis' : `$${shippingCost.toFixed(2)}`}
                   </span>
+                </div>
+              )}
+              
+              {anonymousShipping && !pickupSelected && (
+                <div className="flex justify-between">
+                  <span>Envío a {anonymousShipping.city}</span>
+                  <span>${anonymousShipping.shipping_cost.toFixed(2)}</span>
+                </div>
+              )}
+              
+              {pickupSelected && (
+                <div className="flex justify-between">
+                  <span>Recoger en tienda</span>
+                  <span className="text-green-600 font-medium">Gratis</span>
                 </div>
               )}
               
@@ -319,31 +376,27 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
               </div>
             </div>
 
-            {isAuthenticated ? (
-              <button 
-                onClick={handleCheckout}
-                disabled={isProcessing || !selectedAddress || (billingData?.requires_invoice && (!billingData.rfc || !billingData.razon_social || !billingData.full_name || !billingData.email || !billingData.phone))}
-                className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                <CreditCard className="w-5 h-5" />
-                {isProcessing ? 'Procesando...' : 'Proceder al Pago'}
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <Link href="/auth" className="btn-primary w-full block text-center">
-                  Iniciar Sesión para Continuar
-                </Link>
-                <p className="text-xs text-gray-600 text-center">
-                  Inicia sesión para proceder con tu compra
+            <button 
+              onClick={handleCheckout}
+              disabled={isProcessing || (!selectedAddress && !anonymousShipping && !pickupSelected) || (!pickupSelected && billingData?.requires_invoice && (!billingData.rfc || !billingData.razon_social || !billingData.full_name || !billingData.email || !billingData.phone)) || (!isAuthenticated && !anonymousEmail)}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <CreditCard className="w-5 h-5" />
+              {isProcessing ? 'Procesando...' : 'Proceder al Pago'}
+            </button>
+
+            <p className="text-xs text-red-600 text-center mt-2">
+              {(!selectedAddress && !anonymousShipping && !pickupSelected) && "Selecciona una opción de envío para continuar"}
+              {!pickupSelected && billingData?.requires_invoice && (!billingData.rfc || !billingData.razon_social || !billingData.full_name || !billingData.email || !billingData.phone) && "Complete todos los campos de facturación"}
+              {!isAuthenticated && !anonymousEmail && "Ingresa tu correo electrónico"}
+            </p>
+
+            {!isAuthenticated && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-800 text-center">
+                  💡 <Link href="/auth" className="underline font-medium">Crea una cuenta</Link> para guardar tus direcciones y ver el historial de pedidos
                 </p>
               </div>
-            )}
-
-            {isAuthenticated && (
-              <p className="text-xs text-red-600 text-center mt-2">
-                {!selectedAddress && "Selecciona una opción de envío para continuar"}
-                {selectedAddress && billingData?.requires_invoice && (!billingData.rfc || !billingData.razon_social || !billingData.full_name || !billingData.email || !billingData.phone) && "Complete todos los campos de facturación"}
-              </p>
             )}
 
             <Link
@@ -354,6 +407,197 @@ export default function CartPage({ isAuthenticated }: CartPageProps) {
             </Link>
           </motion.div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Anonymous Shipping Form Component
+interface AnonymousShippingFormProps {
+  onShippingDataChange: (data: AnonymousShippingData | null) => void;
+  onPickupSelect: (pickup: boolean) => void;
+  pickupSelected: boolean;
+  anonymousEmail: string;
+  onEmailChange: (email: string) => void;
+}
+
+function AnonymousShippingForm({ 
+  onShippingDataChange, 
+  onPickupSelect, 
+  pickupSelected,
+  anonymousEmail,
+  onEmailChange
+}: AnonymousShippingFormProps) {
+  const [formData, setFormData] = useState({
+    name: '',
+    address_line1: '',
+    address_line2: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: 'México',
+    phone: '',
+  });
+
+  const calculateShippingCost = (city: string): number => {
+    return city.toLowerCase().trim() === 'chihuahua' ? 120 : 200;
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
+    
+    // Update shipping data if form is complete
+    if (newFormData.name && newFormData.address_line1 && newFormData.city && newFormData.state && newFormData.postal_code) {
+      onShippingDataChange({
+        ...newFormData,
+        shipping_cost: calculateShippingCost(newFormData.city),
+      });
+    } else {
+      onShippingDataChange(null);
+    }
+  };
+
+  const handlePickupToggle = (pickup: boolean) => {
+    onPickupSelect(pickup);
+    if (pickup) {
+      onShippingDataChange(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold">Información de Envío</h3>
+      
+      {/* Email Required */}
+      <div className="border rounded-lg p-4 bg-blue-50">
+        <div className="mb-3">
+          <label className="font-medium text-blue-800">
+            📧 Correo Electrónico *
+          </label>
+        </div>
+        <p className="text-sm text-blue-700 mb-3">
+          Te enviaremos la confirmación de tu compra con todos los detalles
+        </p>
+        <input
+          type="email"
+          value={anonymousEmail}
+          onChange={(e) => onEmailChange(e.target.value)}
+          placeholder="tu@email.com"
+          className="input-field"
+          required
+        />
+      </div>
+
+      {/* Pickup Option */}
+      <div className="border rounded-lg p-4">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="radio"
+            name="shipping_option"
+            checked={pickupSelected}
+            onChange={() => handlePickupToggle(true)}
+            className="w-4 h-4 text-primary"
+          />
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <Store className="w-4 h-4 text-primary" />
+              <span className="font-medium">Recoger en Tienda</span>
+              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Gratis</span>
+            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              Ignacio Rodríguez #113, Col. Diego Lucero, Chihuahua, Chih. 31123
+            </p>
+            <p className="text-xs text-gray-500">
+              Disponible de lunes a viernes de 9:00 AM a 6:00 PM
+            </p>
+          </div>
+        </label>
+      </div>
+
+      {/* Shipping Option */}
+      <div className="border rounded-lg p-4">
+        <label className="flex items-center gap-3 cursor-pointer mb-4">
+          <input
+            type="radio"
+            name="shipping_option"
+            checked={!pickupSelected}
+            onChange={() => handlePickupToggle(false)}
+            className="w-4 h-4 text-primary"
+          />
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-gray-500" />
+            <span className="font-medium">Envío a Domicilio</span>
+          </div>
+        </label>
+
+        {!pickupSelected && (
+          <div className="space-y-4 ml-7">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Nombre completo *"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="input-field"
+                required
+              />
+              <input
+                type="tel"
+                placeholder="Teléfono"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                className="input-field"
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="Dirección *"
+              value={formData.address_line1}
+              onChange={(e) => handleInputChange('address_line1', e.target.value)}
+              className="input-field"
+              required
+            />
+            <input
+              type="text"
+              placeholder="Dirección 2 (opcional)"
+              value={formData.address_line2}
+              onChange={(e) => handleInputChange('address_line2', e.target.value)}
+              className="input-field"
+            />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <input
+                  type="text"
+                  placeholder="Ciudad *"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  className="input-field"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Chihuahua: $120 | Otras ciudades: $200
+                </p>
+              </div>
+              <input
+                type="text"
+                placeholder="Estado *"
+                value={formData.state}
+                onChange={(e) => handleInputChange('state', e.target.value)}
+                className="input-field"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Código Postal *"
+                value={formData.postal_code}
+                onChange={(e) => handleInputChange('postal_code', e.target.value)}
+                className="input-field"
+                required
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

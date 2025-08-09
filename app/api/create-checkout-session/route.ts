@@ -12,11 +12,7 @@ export async function POST(request: NextRequest) {
     const supabase = createServerComponentClient({ cookies });
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    const { items, total, shipping_address_id, shipping_cost, billing_data, tax_amount } = await request.json();
+    const { items, total, shipping_address_id, shipping_cost, billing_data, tax_amount, is_pickup, anonymous_shipping, anonymous_email } = await request.json();
 
     // Create Stripe checkout session
     const checkoutSession = await stripe.checkout.sessions.create({
@@ -63,12 +59,15 @@ export async function POST(request: NextRequest) {
       success_url: `${process.env.NEXT_PUBLIC_API_URL}/pago-exitoso?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_API_URL}/carrito`,
       metadata: {
-        user_id: user.id,
+        user_id: user?.id || '',
         items: JSON.stringify(items),
         shipping_address_id: shipping_address_id || '',
         shipping_cost: shipping_cost.toString(),
         billing_data: billing_data ? JSON.stringify(billing_data) : '',
         tax_amount: tax_amount ? tax_amount.toString() : '0',
+        is_pickup: is_pickup ? 'true' : 'false',
+        anonymous_shipping: anonymous_shipping ? JSON.stringify(anonymous_shipping) : '',
+        anonymous_email: anonymous_email || '',
       },
     });
 
