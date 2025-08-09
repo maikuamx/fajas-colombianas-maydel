@@ -122,6 +122,7 @@ export default function FeaturedProducts({ products, userRole, isAuthenticated: 
                     <CartButton
                       productId={product.id}
                       productColors={product.product_colors}
+                      productSizes={[]}
                       userRole={userRole}
                       isAuthenticated={isAuthenticated}
                     />

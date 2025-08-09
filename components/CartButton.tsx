@@ -15,23 +15,40 @@ interface CartButtonProps {
     color_name: string;
     color_code: string;
   }>;
+  productSizes?: Array<{
+    id: string;
+    size: string;
+  }>;
   userRole?: string | null;
   isAuthenticated: boolean;
   className?: string;
+  // Props for direct add (from product details page)
+  directAdd?: boolean;
+  selectedColor?: string;
+  selectedSize?: string;
+  quantity?: number;
+  onAddToCart?: () => void;
 }
 
 export default function CartButton({ 
   productId, 
   productColors = [], 
+  productSizes = [],
   userRole, 
   isAuthenticated: initialAuth, 
-  className = '' 
+  className = '',
+  directAdd = false,
+  selectedColor,
+  selectedSize,
+  quantity = 1,
+  onAddToCart
 }: CartButtonProps) {
   const router = useRouter();
   const { addToCart } = useCart();
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  const [internalSelectedColor, setInternalSelectedColor] = useState<string | null>(null);
+  const [internalSelectedSize, setInternalSelectedSize] = useState<string | null>(null);
+  const [internalQuantity, setInternalQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(initialAuth);
   const supabase = createClientComponentClient();
@@ -52,7 +69,7 @@ export default function CartButton({
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  const handleAddToCart = async (colorId?: string) => {
+  const handleAddToCart = async (colorId?: string, sizeId?: string, qty?: number) => {
     if (!isAuthenticated) {
       router.push('/auth');
       return;
@@ -64,11 +81,18 @@ export default function CartButton({
 
     setIsAdding(true);
     try {
-      console.log('Adding to cart:', { productId, colorId, quantity });
-      await addToCart(productId, colorId, quantity);
+      const finalQuantity = qty || quantity || internalQuantity;
+      console.log('Adding to cart:', { productId, colorId, sizeId, quantity: finalQuantity });
+      await addToCart(productId, colorId, finalQuantity);
       setShowColorPicker(false);
-      setQuantity(1);
-      setSelectedColor(null);
+      setInternalQuantity(1);
+      setInternalSelectedColor(null);
+      setInternalSelectedSize(null);
+      
+      // Call external callback if provided
+      if (onAddToCart) {
+        onAddToCart();
+      }
     } catch (error) {
       console.error('Error adding to cart:', error);
     } finally {
@@ -86,7 +110,14 @@ export default function CartButton({
       return;
     }
 
-    if (productColors.length > 0) {
+    // If directAdd is true, add directly with provided values
+    if (directAdd) {
+      handleAddToCart(selectedColor, selectedSize, quantity);
+      return;
+    }
+
+    // Otherwise show picker if colors are available
+    if (productColors.length > 0 || productSizes.length > 0) {
       setShowColorPicker(true);
     } else {
       handleAddToCart();

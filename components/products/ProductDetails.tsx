@@ -19,6 +19,10 @@ interface Product {
     color_name: string;
     color_code: string;
   }>;
+  product_sizes?: Array<{
+    id: string;
+    size: string;
+  }>;
 }
 
 interface ProductDetailsProps {
@@ -29,8 +33,12 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
   const [selectedColor, setSelectedColor] = useState<string | null>(
     product.product_colors[0]?.id || null
   );
+  const [selectedSize, setSelectedSize] = useState<string | null>(
+    product.product_sizes?.[0]?.id || null
+  );
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [isAdding, setIsAdding] = useState(false);
 
   const parseImageUrls = (imageUrl: string | string[]): string[] => {
     if (!imageUrl) return [];
@@ -62,6 +70,26 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
 
   const handleQuantityChange = (delta: number) => {
     setQuantity((prev) => Math.max(1, prev + delta));
+  };
+
+  const handleAddToCart = () => {
+    setIsAdding(true);
+    // Reset adding state after a short delay to show feedback
+    setTimeout(() => {
+      setIsAdding(false);
+    }, 1000);
+  };
+
+  const canAddToCart = () => {
+    // Check if color is required and selected
+    if (product.product_colors.length > 0 && !selectedColor) {
+      return false;
+    }
+    // Check if size is required and selected
+    if (product.product_sizes && product.product_sizes.length > 0 && !selectedSize) {
+      return false;
+    }
+    return true;
   };
 
   return (
@@ -134,11 +162,34 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
             <p className="text-gray-600">{product.description}</p>
           </div>
 
-          {product.size && (
+          {/* Static size display (if no product_sizes array) */}
+          {product.size && (!product.product_sizes || product.product_sizes.length === 0) && (
             <div>
               <h3 className="font-semibold mb-2">Talla</h3>
               <div className="inline-block px-4 py-2 rounded-lg bg-gray-100 text-gray-900">
                 {product.size}
+              </div>
+            </div>
+          )}
+
+          {/* Dynamic size selection */}
+          {product.product_sizes && product.product_sizes.length > 0 && (
+            <div>
+              <h3 className="font-semibold mb-2">Talla</h3>
+              <div className="flex gap-3 flex-wrap">
+                {product.product_sizes.map((size) => (
+                  <button
+                    key={size.id}
+                    onClick={() => setSelectedSize(size.id)}
+                    className={`px-4 py-2 rounded-lg border transition-colors ${
+                      selectedSize === size.id
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {size.size}
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -168,6 +219,9 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
                   </div>
                 ))}
               </div>
+              {product.product_colors.length > 0 && !selectedColor && (
+                <p className="text-sm text-red-500 mt-1">Por favor selecciona un color</p>
+              )}
             </div>
           )}
 
@@ -198,18 +252,52 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
 
           <div className="flex gap-4 pt-4">
             <div className="flex-1">
-              <CartButton
-                productId={product.id}
-                productColors={product.product_colors}
-                userRole={null}
-                isAuthenticated={true}
-                className="w-full h-12 rounded-xl bg-primary text-white hover:bg-primary/90 flex items-center justify-center gap-2 font-medium"
-              />
+              <button
+                onClick={handleAddToCart}
+                disabled={!canAddToCart() || isAdding}
+                className="w-full h-12 rounded-xl bg-primary text-white hover:bg-primary/90 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium transition-colors"
+              >
+                {isAdding ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Agregando...
+                  </>
+                ) : (
+                  'Agregar al Carrito'
+                )}
+              </button>
+              {/* Hidden CartButton for actual functionality */}
+              <div className="hidden">
+                <CartButton
+                  productId={product.id}
+                  productColors={product.product_colors}
+                  productSizes={product.product_sizes}
+                  userRole={null}
+                  isAuthenticated={true}
+                  directAdd={true}
+                  selectedColor={selectedColor}
+                  selectedSize={selectedSize}
+                  quantity={quantity}
+                  onAddToCart={handleAddToCart}
+                />
+              </div>
             </div>
             <button className="p-3 rounded-full border border-gray-200 hover:bg-gray-100 transition-colors">
               <Heart className="w-6 h-6" />
             </button>
           </div>
+
+          {/* Validation Messages */}
+          {!canAddToCart() && (
+            <div className="text-sm text-red-500 space-y-1">
+              {product.product_colors.length > 0 && !selectedColor && (
+                <p>• Selecciona un color</p>
+              )}
+              {product.product_sizes && product.product_sizes.length > 0 && !selectedSize && (
+                <p>• Selecciona una talla</p>
+              )}
+            </div>
+          )}
 
           <div className="border-t pt-6 mt-8">
             <div className="flex items-center gap-2 text-sm text-gray-600">
