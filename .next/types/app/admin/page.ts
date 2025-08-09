@@ -1,4 +1,4 @@
-// File: C:\Users\jesus\OneDrive\Documentos\GitHub\fajas-colombianas-maydel\app\admin\page.tsx
+// File: C:\Users\Pepe\Documents\codigos\fajas-colombianas-maydel\app\admin\page.tsx
 import * as entry from '../../../../app/admin/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
