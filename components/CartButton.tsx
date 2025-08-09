@@ -158,16 +158,16 @@ export default function CartButton({
                   {productColors.map((color) => (
                     <button
                       key={color.id}
-                      onClick={() => setSelectedColor(color.id)}
+                      onClick={() => setInternalSelectedColor(color.id)}
                       className={`relative w-8 h-8 rounded-full border-2 ${
-                        selectedColor === color.id
+                        internalSelectedColor === color.id
                           ? 'border-primary ring-2 ring-primary/20'
                           : 'border-gray-200'
                       }`}
                       style={{ backgroundColor: color.color_code }}
                       title={color.color_name}
                     >
-                      {selectedColor === color.id && (
+                      {internalSelectedColor === color.id && (
                         <div className="absolute inset-0 rounded-full bg-black/20 flex items-center justify-center">
                           <div className="w-2 h-2 bg-white rounded-full" />
                         </div>
@@ -184,14 +184,14 @@ export default function CartButton({
                 </label>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    onClick={() => setInternalQuantity(Math.max(1, internalQuantity - 1))}
                     className="p-1 rounded-full hover:bg-gray-100"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
-                  <span className="w-8 text-center text-sm">{quantity}</span>
+                  <span className="w-8 text-center text-sm">{internalQuantity}</span>
                   <button
-                    onClick={() => setQuantity(quantity + 1)}
+                    onClick={() => setInternalQuantity(internalQuantity + 1)}
                     className="p-1 rounded-full hover:bg-gray-100"
                   >
                     <Plus className="w-4 h-4" />
@@ -204,16 +204,16 @@ export default function CartButton({
                 <button
                   onClick={() => {
                     setShowColorPicker(false);
-                    setSelectedColor(null);
-                    setQuantity(1);
+                    setInternalSelectedColor(null);
+                    setInternalQuantity(1);
                   }}
                   className="flex-1 px-3 py-2 text-xs border border-gray-200 rounded-lg hover:bg-gray-50"
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={() => handleAddToCart(selectedColor || undefined)}
-                  disabled={isAdding || (productColors.length > 0 && !selectedColor)}
+                  onClick={() => handleAddToCart(internalSelectedColor || undefined, internalSelectedSize || undefined, internalQuantity)}
+                  disabled={isAdding || (productColors.length > 0 && !internalSelectedColor)}
                   className="flex-1 px-3 py-2 text-xs bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50"
                 >
                   {isAdding ? 'Agregando...' : 'Agregar'}
