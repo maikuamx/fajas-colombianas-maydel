@@ -102,7 +102,7 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
               key={currentImageIndex}
               src={imageUrls[currentImageIndex]}
               alt={product.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
